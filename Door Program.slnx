@@ -1,0 +1,7 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="Door Program.vcxproj" Id="0ba8ce20-3ee7-455a-88ad-e986440f204d" />
+</Solution>
