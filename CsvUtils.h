@@ -9,9 +9,14 @@
 #include "Door.h"
 #include <iostream>
 #include <filesystem>
-
 #include <algorithm>
 #include <cctype>
+
+//struct CsvError
+//{
+//    size_t row_index;     // 1-based, CSV row number
+//    std::string message;
+//};
 
 inline std::string Trim(std::string s)
 {
@@ -121,7 +126,7 @@ inline bool ReadPanel(const CsvRow& row, bool& out)
 {
     const std::string& s = ToUpper(row["Panel"]);
 
-    if (s == "Yes") { out = true; return true; }
+    if (s == "YES") { out = true; return true; }
     else out = false;
 
     return false;

@@ -4,8 +4,8 @@
 constexpr size_t MAXTEXTSIZE = 32;
 constexpr double ALLOWANCE = 0.015625;
 struct CsvRow;
-struct TigerStopCut;
 struct CsvTable;
+struct TigerStopCut;
 
 struct CsvError
 {
@@ -186,18 +186,16 @@ public:
 	Construction getConstruction() const { return construction; }
 	bool Create(const CsvRow& row, size_t row_index, std::vector<CsvError>& errors);
 	void Print() const;
-	void AppendTigerStopCuts(std::vector<TigerStopCut>& cuts) const;
+	void AppendTigerStopCuts(std::vector<TigerStopCut>& rails, std::vector<TigerStopCut>& stile) const;
 };
 
 class DoorList
 {
 	std::vector<Door> m_doors;
-	std::vector<TigerStopCut> m_shakerTigerCuts;
-	std::vector<TigerStopCut> m_smallShakerTigerCuts;
-	std::vector<CsvError> m_errors;
-	void AggregateTigerCuts();
-public:
 	void ReadCsvTable(CsvTable doorsTable);
+public:
+	DoorList(CsvTable doorsTable);
 	void WriteTigerStopCsvs(const char* folder) const;
+	void Print();
 
 };

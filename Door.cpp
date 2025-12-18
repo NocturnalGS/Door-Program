@@ -3,6 +3,7 @@
 #include "Door.h"
 #include "CsvUtils.h"
 #include "TigerStop.h"
+#include "CsvReader.h"
 
 //void Door::Create(const CsvRow& row)
 //{
@@ -187,7 +188,7 @@ void Door::PrintConstruction() const
     }
 }
 
-void Door::AppendTigerStopCuts(std::vector<TigerStopCut>& cuts) const
+void Door::AppendTigerStopCuts(std::vector<TigerStopCut>& rails, std::vector<TigerStopCut>& stile) const
 {
     const double w = dimensions.GetOversizedWidth();
     const double h = dimensions.GetOversizedHeight();
@@ -198,13 +199,22 @@ void Door::AppendTigerStopCuts(std::vector<TigerStopCut>& cuts) const
             if (qty == 0)
                 return;
 
-            TigerStopCut c{};
-            c.group = GetStockGroup(part);
-            c.nominal_width = parts.width[part];   // IMPORTANT
-            c.length = parts.GetCutLength(construction, part, w, h);
-            c.quantity = qty;
-
-            cuts.push_back(c);
+            if (GetStockGroup(part) == StockGroup::Rail)
+            {
+                TigerStopCut c{};
+                c.length = parts.GetCutLength(construction, part, w, h);
+                c.quantity = qty;
+                c.nominal_width = parts.width[part];   
+                rails.push_back(c);
+            }
+            if (GetStockGroup(part) == StockGroup::Stile)
+            {
+                TigerStopCut c{};
+                c.length = parts.GetCutLength(construction, part, w, h);
+                c.quantity = qty;
+                c.nominal_width = parts.width[part];
+                stile.push_back(c);
+            }
         };
 
     if (getConstruction() == Construction::Shaker)
@@ -216,28 +226,28 @@ void Door::AppendTigerStopCuts(std::vector<TigerStopCut>& cuts) const
         add(MID_RAIL, quantity * parts.mid_rail_count);
         add(MID_STILE, quantity * parts.mid_stile_count);
     }
-    if (getConstruction() == Construction::Shaker)
-    {
-        add(TOP_RAIL, quantity);
-        add(BOTTOM_RAIL, quantity);
-        add(LEFT_STILE, quantity);
-        add(RIGHT_STILE, quantity);
-        add(MID_RAIL, quantity * parts.mid_rail_count);
-        add(MID_STILE, quantity * parts.mid_stile_count);
-    }
+    //if (getConstruction() == Construction::SmallShaker)
+    //{
+    //    add(TOP_RAIL, quantity);
+    //    add(BOTTOM_RAIL, quantity);
+    //    add(LEFT_STILE, quantity);
+    //    add(RIGHT_STILE, quantity);
+    //    add(MID_RAIL, quantity * parts.mid_rail_count);
+    //    add(MID_STILE, quantity * parts.mid_stile_count);
+    //}
 
 }
 
-void DoorList::AggregateTigerCuts()
-{
-    for (const auto& door : m_doors)
-    {
-        if (door.getConstruction() == Construction::Shaker)
-            door.AppendTigerStopCuts(m_shakerTigerCuts);
-        if (door.getConstruction() == Construction::SmallShaker)
-            door.AppendTigerStopCuts(m_smallShakerTigerCuts);
-    }
-}
+//void DoorList::AggregateTigerCuts()
+//{
+//    for (const auto& door : m_doors)
+//    {
+//        if (door.getConstruction() == Construction::Shaker)
+//            door.AppendTigerStopCuts(m_shakerTigerCuts);
+//        if (door.getConstruction() == Construction::SmallShaker)
+//            door.AppendTigerStopCuts(m_smallShakerTigerCuts);
+//    }
+//}
 
 
 
@@ -245,17 +255,12 @@ void DoorList::AggregateTigerCuts()
 
 void DoorList::ReadCsvTable(CsvTable doorsTable)
 {
-    //for (size_t r = 0; r < doorsTable.rows.size(); ++r)
-    //{
-    //    Door door;
-    //    m_doors.push_back(door);
-    //    m_doors.back().Create(doorsTable.rows[r]);
-    //}
+    std::vector<CsvError> errors;
     unsigned int skippedCount = 0;
     for (size_t i = 0; i < doorsTable.rows.size(); ++i)
     {
         Door d;
-        if (d.Create(doorsTable.rows[i], i + 2, m_errors)) // +2 for header row
+        if (d.Create(doorsTable.rows[i], i + 2, errors)) // +2 for header row
             m_doors.push_back(d);
         else
             skippedCount++;
@@ -264,7 +269,7 @@ void DoorList::ReadCsvTable(CsvTable doorsTable)
     //for (const auto& door : m_doors)
     //    door.Print();
     std::cout << "Skipped " << skippedCount << " doors\n";
-    for (const auto& e : m_errors)
+    for (const auto& e : errors)
     {
         std::cout << "Row " << e.row_index << " skipped: " << e.message << "\n";
     }
@@ -274,15 +279,55 @@ void DoorList::ReadCsvTable(CsvTable doorsTable)
 
 void DoorList::WriteTigerStopCsvs(const char* folder) const
 {
-    std::vector<TigerStopCut> cuts;
+    std::vector<TigerStopCut> railcuts;
+    std::vector<TigerStopCut> stilecuts;
 
     for (const auto& door : m_doors)
-        door.AppendTigerStopCuts(cuts);
+    {
+        if (door.getConstruction() == Construction::Shaker)
+            door.AppendTigerStopCuts(railcuts, stilecuts);
+        //if (door.getConstruction() == Construction::SmallShaker)
+        //    door.AppendTigerStopCuts(m_smallShakerTigerCuts);
+    }
 
-    for (const auto& door : m_doors)
-        door.Print();
+    //for (const auto& door : m_doors)
+    //    door.Print();
 
-    //AggregateTigerStopCuts(cuts);
-    //WriteTigerStopCsvs(folder, cuts);
+    //constexpr double EPS = 0.0001;
+    std::vector<TigerStopCut> out;
+
+    //consolidate
+     
+     
+    //for (const auto& c : cuts)
+    //{
+    //    bool merged = false;
+
+    //    for (auto& o : out)
+    //    {
+    //        if (o.group == c.group && std::fabs(o.nominal_width - c.nominal_width) < EPS && std::fabs(o.length - c.length) < EPS)
+    //        {
+    //            o.quantity += c.quantity;
+    //            merged = true;
+    //            break;
+    //        }
+    //    }
+
+    //    if (!merged)
+    //        out.push_back(c);
+    //}
+
+    //cuts.swap(out);
+    
 }
 
+DoorList::DoorList(CsvTable doorsTable)
+{
+    ReadCsvTable(doorsTable);
+}
+
+void DoorList::Print()
+{
+    for (const auto& door : m_doors)
+        door.Print();
+}

@@ -30,10 +30,9 @@ inline StockGroup GetStockGroup(ShakerPart part)
 
 struct TigerStopCut
 {
-    StockGroup group;          // Rail or Stile
-    double nominal_width;      // BEFORE stick tolerance
     double length;
     unsigned int quantity;
+    double nominal_width;
 };
 
 inline std::string FormatTrimmed(double value)

@@ -22,9 +22,11 @@ int main()
         return 0;
     }
 
-    DoorList doorlist;
     CsvTable doortable = CsvReader::Read(csvPath);
-    doorlist.ReadCsvTable(doortable);
+    DoorList doorlist(doortable);
+
+    doorlist.WriteTigerStopCsvs(cwd);
+
 
     std::string filename = MakeTigerStopFilename(StockGroup::Rail, 2.5, jobName);
     std::cout << filename << "\n";
