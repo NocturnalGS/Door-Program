@@ -7,6 +7,12 @@ struct CsvRow;
 struct TigerStopCut;
 struct CsvTable;
 
+struct CsvError
+{
+	size_t row_index;     // 1-based, CSV row number
+	std::string message;
+};
+
 enum class FaceType
 {
 	Door,
@@ -62,22 +68,42 @@ struct ShakerParts
 			return 0.0;
 		}
 	}
-	double GetCutLength(ShakerPart part, double doorWidth, double doorHeight) const
+	double GetCutLength(Construction construction, ShakerPart part, double doorWidth, double doorHeight) const
 	{
-		switch (part)
+		if (construction == Construction::Shaker)
 		{
-		case TOP_RAIL:
-		case BOTTOM_RAIL:
-		case MID_RAIL:
-			return doorWidth - GetPartWidth(LEFT_STILE) - GetPartWidth(RIGHT_STILE) + (rabbet * 2) + cope_tolerance * 2;
-		case LEFT_STILE:
-		case RIGHT_STILE:
-			return doorHeight;
-		case MID_STILE:
-			return doorHeight - GetPartWidth(TOP_RAIL) - GetPartWidth(BOTTOM_RAIL) - (GetPartWidth(MID_RAIL) * mid_rail_count) + (rabbet * 2) + cope_tolerance * 2;
-		default:
-			return 0.0;
+			switch (part)
+			{
+			case TOP_RAIL:
+			case BOTTOM_RAIL:
+			case MID_RAIL:
+				return doorWidth - GetPartWidth(LEFT_STILE) - GetPartWidth(RIGHT_STILE) + (rabbet * 2) + cope_tolerance * 2;
+			case LEFT_STILE:
+			case RIGHT_STILE:
+				return doorHeight;
+			case MID_STILE:
+				return doorHeight - GetPartWidth(TOP_RAIL) - GetPartWidth(BOTTOM_RAIL) - (GetPartWidth(MID_RAIL) * mid_rail_count) + (rabbet * 2) + cope_tolerance * 2;
+			default:
+				return 0.0;
+			}
 		}
+		if (construction == Construction::SmallShaker)
+		{
+			switch (part)
+			{
+			case TOP_RAIL:
+			case BOTTOM_RAIL:
+			case MID_RAIL:
+				return doorWidth;
+			case LEFT_STILE:
+			case RIGHT_STILE:
+			case MID_STILE:
+				return doorHeight;
+			default:
+				return 0.0;
+			}
+		}
+		return 0.0;
 	}
 };
 
@@ -157,7 +183,8 @@ class Door
 	void PrintConstruction() const;
 
 public:
-	void Create(const CsvRow& row);
+	Construction getConstruction() const { return construction; }
+	bool Create(const CsvRow& row, size_t row_index, std::vector<CsvError>& errors);
 	void Print() const;
 	void AppendTigerStopCuts(std::vector<TigerStopCut>& cuts) const;
 };
@@ -165,8 +192,12 @@ public:
 class DoorList
 {
 	std::vector<Door> m_doors;
+	std::vector<TigerStopCut> m_shakerTigerCuts;
+	std::vector<TigerStopCut> m_smallShakerTigerCuts;
+	std::vector<CsvError> m_errors;
+	void AggregateTigerCuts();
 public:
 	void ReadCsvTable(CsvTable doorsTable);
-	//void WriteTigerStopCsvs(const char* folder) const;
+	void WriteTigerStopCsvs(const char* folder) const;
 
 };

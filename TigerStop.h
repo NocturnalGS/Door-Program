@@ -36,7 +36,7 @@ struct TigerStopCut
     unsigned int quantity;
 };
 
-std::string FormatTrimmed(double value)
+inline std::string FormatTrimmed(double value)
 {
     // 1. Round to 2 decimal places
     std::string s = std::format("{:.2f}", value);
@@ -54,7 +54,7 @@ std::string FormatTrimmed(double value)
     return s;
 }
 
-std::string MakeTigerStopFilename(StockGroup group, double width, std::string jobname)
+inline std::string MakeTigerStopFilename(StockGroup group, double width, std::string jobname)
 {
     std::string g = (group == StockGroup::Rail) ? "Rails" : "Stiles";
     std::string s_width = FormatTrimmed(width);

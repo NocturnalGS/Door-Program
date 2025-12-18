@@ -7,6 +7,29 @@
 #include <cstring>
 #include "CsvReader.h"
 #include "Door.h"
+#include <iostream>
+#include <filesystem>
+
+#include <algorithm>
+#include <cctype>
+
+inline std::string Trim(std::string s)
+{
+    auto not_space = [](unsigned char c) { return !std::isspace(c); };
+
+    s.erase(s.begin(), std::find_if(s.begin(), s.end(), not_space));
+    s.erase(std::find_if(s.rbegin(), s.rend(), not_space).base(), s.end());
+
+    return s;
+}
+
+inline std::string ToUpper(std::string s)
+{
+    s = Trim(s);
+    std::transform(s.begin(), s.end(), s.begin(),
+        [](unsigned char c) { return std::toupper(c); });
+    return s;
+}
 
 inline void CopyCsvText(const CsvRow& row, const char* columnName, char* dst, size_t dstSize)
 {
@@ -36,10 +59,7 @@ inline bool ReadInt(const CsvRow& row, const char* columnName, unsigned int& out
     return true;
 }
 
-inline bool ReadDouble(
-    const CsvRow& row,
-    const char* columnName,
-    double& outValue)
+inline bool ReadDouble(const CsvRow& row, const char* columnName, double& outValue)
 {
     const std::string& s = row[columnName];
 
@@ -67,18 +87,18 @@ struct EnumMap
 
 inline bool ReadFaceType(const CsvRow& row, FaceType& out)
 {
-    const std::string& s = row["Type"];
+    const std::string& s = ToUpper(row["Type"]);
 
-    if (s == "Door") { out = FaceType::Door; return true; }
-    if (s == "Drawer") { out = FaceType::Drawer;   return true; }
-    if (s == "Panel") { out = FaceType::Panel; return true; }
+    if (s == "DOOR") { out = FaceType::Door; return true; }
+    if (s == "DRAWER") { out = FaceType::Drawer;   return true; }
+    if (s == "PANEL") { out = FaceType::Panel; return true; }
 
     return false;
 }
 
 inline bool ReadConstruction(const CsvRow& row, Construction& out)
 {
-    const std::string& s = row["Construction"];
+    const std::string& s = ToUpper(row["Construction"]);
 
     if (s == "SLAB") { out = Construction::Slab; return true; }
     if (s == "SHAKER") { out = Construction::Shaker;   return true; }
@@ -89,7 +109,7 @@ inline bool ReadConstruction(const CsvRow& row, Construction& out)
 
 inline bool ReadOrientation(const CsvRow& row, Orientation& out)
 {
-    const std::string& s = row["Grain Direction"];
+    const std::string& s = ToUpper(row["Grain Direction"]);
 
     if (s == "VERTICAL") { out = Orientation::VERTICAL; return true; }
     if (s == "HORIZONTAL") { out = Orientation::HORIZONTAL;   return true; }
@@ -99,10 +119,16 @@ inline bool ReadOrientation(const CsvRow& row, Orientation& out)
 
 inline bool ReadPanel(const CsvRow& row, bool& out)
 {
-    const std::string& s = row["Panel"];
+    const std::string& s = ToUpper(row["Panel"]);
 
     if (s == "Yes") { out = true; return true; }
     else out = false;
 
     return false;
+}
+
+inline std::string extractparentFolderName(const std::string& fullPath)
+{
+    std::filesystem::path p(fullPath);
+    return p.parent_path().filename().string();
 }
