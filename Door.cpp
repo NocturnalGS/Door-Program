@@ -230,6 +230,14 @@ void DoorList::ReadCsvTable(CsvTable doorsTable)
     }
 
     std::cout << "\nProcessed " << m_doors.size() << " valid door(s)\n";
+
+    //Temp add total door perimeter
+    double perimeter = 0;
+    for (const auto& door : m_doors)
+    {
+        perimeter += door.GetPerimeter();
+    }
+    std::cout << "Total Perimeter: " << perimeter << "\n";
 }
 
 bool SortByGroupThenWidthThenLength(const TigerStopItem& a, const TigerStopItem& b)

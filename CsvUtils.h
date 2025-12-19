@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <string>        // std::string
 #include <vector>        // std::vector
 #include <unordered_map>// std::unordered_map
@@ -10,7 +10,7 @@
 #include <climits>      // INT_MIN, INT_MAX
 #include <cstring>      // strncpy_s
 #include <filesystem>   // extractparentFolderName
-#include <windows.h>
+#include <shobjidl.h>   // IFileDialog
 
 
 //forward declarations
@@ -21,7 +21,6 @@ class CsvReader;
 inline std::string Trim(std::string s);
 inline std::string ToUpper(std::string s);
 inline void CopyCsvText(const CsvRow& row, const char* columnName, char* dst, size_t dstSize);
-//inline bool ReadInt(const CsvRow& row, const char* columnName, unsigned int& outValue);
 inline bool ReadInt(const CsvRow& row, const char* columnName, int& outValue);
 inline bool ReadUInt(const CsvRow& row, const char* columnName, unsigned int& outValue);
 inline bool ReadDouble(const CsvRow& row, const char* columnName, double& outValue);
@@ -206,35 +205,6 @@ inline std::vector<std::string> CsvReader::ParseLine(const std::string& line)
     return result;
 }
 
-//inline std::vector<std::string> CsvReader::ParseLine(const std::string& line)
-//{
-//    std::vector<std::string> result;
-//    std::string field;
-//    bool inQuotes = false;
-//
-//    for (size_t i = 0; i < line.size(); ++i)
-//    {
-//        char c = line[i];
-//
-//        if (c == '"')
-//        {
-//            inQuotes = !inQuotes;
-//        }
-//        else if (c == ',' && !inQuotes)
-//        {
-//            result.push_back(field);
-//            field.clear();
-//        }
-//        else
-//        {
-//            field += c;
-//        }
-//    }
-//
-//    result.push_back(field);
-//    return result;
-//}
-
 inline CsvTable CsvReader::Read(const std::string& path)
 {
     CsvTable table;
@@ -272,28 +242,92 @@ inline CsvTable CsvReader::Read(const std::string& path)
     return table;
 }
 
+//inline std::string CsvFileDialog::Open()
+//{
+//    char fileName[MAX_PATH] = "";
+//
+//    char cwd[MAX_PATH];
+//    GetCurrentDirectoryA(MAX_PATH, cwd);
+//
+//    printf("CWD: %s\n", cwd);
+//
+//    OPENFILENAMEA ofn {};
+//    ofn.lStructSize = sizeof(ofn);
+//    ofn.lpstrFilter =
+//        "CSV Files (*.csv)\0*.csv\0"
+//        "All Files (*.*)\0*.*\0";
+//    ofn.lpstrFile = fileName;
+//    ofn.lpstrInitialDir = cwd;
+//    ofn.nMaxFile = MAX_PATH;
+//    ofn.Flags = OFN_EXPLORER | OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
+//    ofn.lpstrDefExt = "csv";
+//
+//    if (GetOpenFileNameA(&ofn))
+//        return fileName;
+//
+//    return {};
+//}
+
 inline std::string CsvFileDialog::Open()
 {
-    char fileName[MAX_PATH] = "";
+    HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+    bool comInitialized = SUCCEEDED(hr);
 
-    char cwd[MAX_PATH];
-    GetCurrentDirectoryA(MAX_PATH, cwd);
+    IFileDialog* pfd = nullptr;
+    std::string result;
 
-    OPENFILENAMEA ofn {};
-    ofn.lStructSize = sizeof(ofn);
-    ofn.lpstrFilter =
-        "CSV Files (*.csv)\0*.csv\0"
-        "All Files (*.*)\0*.*\0";
-    ofn.lpstrFile = fileName;
-    ofn.lpstrInitialDir = cwd;
-    ofn.nMaxFile = MAX_PATH;
-    ofn.Flags = OFN_EXPLORER | OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
-    ofn.lpstrDefExt = "csv";
+    if (SUCCEEDED(CoCreateInstance(CLSID_FileOpenDialog, nullptr,
+        CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pfd))))
+    {
+        // Build a filter: CSV + All files
+        COMDLG_FILTERSPEC filters[] =
+        {
+            { L"CSV Files (*.csv)", L"*.csv" },
+            { L"All Files (*.*)",   L"*.*"   }
+        };
+        pfd->SetFileTypes(2, filters);
+        pfd->SetDefaultExtension(L"csv");
+        pfd->SetTitle(L"Select CSV File");
 
-    if (GetOpenFileNameA(&ofn))
-        return fileName;
+        // Get CWD as wide string
+        wchar_t cwd[MAX_PATH];
+        GetCurrentDirectoryW(MAX_PATH, cwd);
 
-    return {};
+        IShellItem* folder = nullptr;
+        if (SUCCEEDED(SHCreateItemFromParsingName(cwd, nullptr, IID_PPV_ARGS(&folder))))
+        {
+            pfd->SetDefaultFolder(folder);
+            pfd->SetFolder(folder);
+            folder->Release();
+        }
+
+        if (SUCCEEDED(pfd->Show(nullptr)))
+        {
+            IShellItem* psi = nullptr;
+            if (SUCCEEDED(pfd->GetResult(&psi)))
+            {
+                PWSTR path = nullptr;
+                if (SUCCEEDED(psi->GetDisplayName(SIGDN_FILESYSPATH, &path)))
+                {
+                    // convert wide → std::string
+                    int size = WideCharToMultiByte(CP_UTF8, 0, path, -1, nullptr, 0, nullptr, nullptr);
+                    std::string utf8(size - 1, 0);
+                    WideCharToMultiByte(CP_UTF8, 0, path, -1, utf8.data(), size, nullptr, nullptr);
+                    result = utf8;
+
+                    CoTaskMemFree(path);
+                }
+                psi->Release();
+            }
+        }
+
+        pfd->Release();
+    }
+
+    if (comInitialized)
+        CoUninitialize();
+
+    return result;
 }
 
 class Row

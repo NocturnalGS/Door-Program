@@ -209,11 +209,16 @@ class Door
 	void PrintPart(ShakerPart part) const;
 	void PrintConstruction() const;
 
+
 public:
 	Construction getConstruction() const { return construction; }
 	bool Create(const CsvRow& row, size_t row_index, std::vector<CsvError>& errors);
 	void Print() const;
 	void AppendTigerStopCuts(std::vector<TigerStopItem>& cutlist) const;
+	double GetPerimeter() const
+	{
+		return dimensions.finishedWidth * 2.0 + dimensions.finishedHeight * 2;
+	}
 private:
 	inline bool ReadFaceType(const CsvRow& row, FaceType& out)
 	{
