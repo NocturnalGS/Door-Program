@@ -1,41 +1,4 @@
-#include <iostream>
-#include <format>
 #include "Door.h"
-#include "CsvUtils.h"
-#include "TigerStop.h"
-#include "CsvReader.h"
-
-//void Door::Create(const CsvRow& row)
-//{
-//    CopyCsvText(row, "Name", name, MAXTEXTSIZE);
-//    CopyCsvText(row, "Cab#", label, MAXTEXTSIZE);
-//    CopyCsvText(row, "Notes", notes, MAXTEXTSIZE);
-//
-//    if (!ReadInt(row, "Count", quantity))
-//        quantity = 1;
-//
-//    ReadDouble(row, "Actual Width", dimensions.finishedWidth);
-//    ReadDouble(row, "Actual Height", dimensions.finishedHeight);
-//    ReadDouble(row, "WidthOversize", dimensions.oversizeWidth);
-//    ReadDouble(row, "HeightOversize", dimensions.oversizeHeight);
-//    ReadDouble(row, "Rabbet", dimensions.shakerparts.rabbet);
-//    ReadDouble(row, "Bottom Rail Width", dimensions.shakerparts.width[BOTTOM_RAIL]);
-//    ReadDouble(row, "Top Rail Width", dimensions.shakerparts.width[TOP_RAIL]);
-//    ReadDouble(row, "Left Stile Width", dimensions.shakerparts.width[LEFT_STILE]);
-//    ReadDouble(row, "Right Stile Width", dimensions.shakerparts.width[RIGHT_STILE]);
-//    ReadDouble(row, "Mid Rail/Stile Width", dimensions.shakerparts.width[MID_RAIL]);
-//    ReadDouble(row, "Mid Rail/Stile Width", dimensions.shakerparts.width[MID_STILE]);
-//    ReadDouble(row, "StickTolerance", dimensions.shakerparts.stick_tolerance);
-//    ReadDouble(row, "CopeTolerance", dimensions.shakerparts.cope_tolerance);
-//    if (!ReadInt(row, "Mid Rail Count", dimensions.shakerparts.mid_rail_count))
-//        dimensions.shakerparts.mid_rail_count = 0;
-//    if (!ReadInt(row, "Mid Stile Count", dimensions.shakerparts.mid_stile_count))
-//        dimensions.shakerparts.mid_stile_count = 0;
-//    ReadFaceType(row, type);
-//    ReadConstruction(row, construction);
-//    ReadOrientation(row, dimensions.panel.orientation);
-//    ReadPanel(row, dimensions.panel.hasPanel);
-//}
 
 bool Door::Create(const CsvRow& row, size_t row_index, std::vector<CsvError>& errors)
 {
@@ -50,7 +13,7 @@ bool Door::Create(const CsvRow& row, size_t row_index, std::vector<CsvError>& er
     CopyCsvText(row, "Cab#", label, MAXTEXTSIZE);
     CopyCsvText(row, "Notes", notes, MAXTEXTSIZE);
 
-    if (!ReadInt(row, "Count", quantity) || quantity == 0)
+    if (!ReadUInt(row, "Count", quantity) || quantity == 0)
         return fatal(name, label, "Invalid or missing Count");
 
     if (!ReadDouble(row, "Actual Width", dimensions.finishedWidth))
@@ -70,25 +33,24 @@ bool Door::Create(const CsvRow& row, size_t row_index, std::vector<CsvError>& er
     ReadDouble(row, "HeightOversize", dimensions.oversizeHeight);
     ReadDouble(row, "Rabbet", dimensions.shakerparts.rabbet);
 
-    ReadDouble(row, "Bottom Rail Width", dimensions.shakerparts.width[BOTTOM_RAIL]);
-    ReadDouble(row, "Top Rail Width", dimensions.shakerparts.width[TOP_RAIL]);
-    ReadDouble(row, "Left Stile Width", dimensions.shakerparts.width[LEFT_STILE]);
-    ReadDouble(row, "Right Stile Width", dimensions.shakerparts.width[RIGHT_STILE]);
-    ReadDouble(row, "Mid Rail/Stile Width", dimensions.shakerparts.width[MID_RAIL]);
-    ReadDouble(row, "Mid Rail/Stile Width", dimensions.shakerparts.width[MID_STILE]);
+    ReadDouble(row, "Bottom Rail Width", dimensions.shakerparts.width[static_cast<int>(ShakerPart::BOTTOM_RAIL)]);
+    ReadDouble(row, "Top Rail Width", dimensions.shakerparts.width[static_cast<int>(ShakerPart::TOP_RAIL)]);
+    ReadDouble(row, "Left Stile Width", dimensions.shakerparts.width[static_cast<int>(ShakerPart::LEFT_STILE)]);
+    ReadDouble(row, "Right Stile Width", dimensions.shakerparts.width[static_cast<int>(ShakerPart::RIGHT_STILE)]);
+    ReadDouble(row, "Mid Rail/Stile Width", dimensions.shakerparts.width[static_cast<int>(ShakerPart::MID_RAIL)]);
+    ReadDouble(row, "Mid Rail/Stile Width", dimensions.shakerparts.width[static_cast<int>(ShakerPart::MID_STILE)]);
 
     ReadDouble(row, "StickTolerance", dimensions.shakerparts.stick_tolerance);
     ReadDouble(row, "CopeTolerance", dimensions.shakerparts.cope_tolerance);
 
-    ReadInt(row, "Mid Rail Count", dimensions.shakerparts.mid_rail_count);
-    ReadInt(row, "Mid Stile Count", dimensions.shakerparts.mid_stile_count);
+    ReadUInt(row, "Mid Rail Count", dimensions.shakerparts.mid_rail_count);
+    ReadUInt(row, "Mid Stile Count", dimensions.shakerparts.mid_stile_count);
 
     ReadOrientation(row, dimensions.panel.orientation);
     ReadPanel(row, dimensions.panel.hasPanel);
 
     return true;
 }
-
 
 void Door::PrintPart(ShakerPart part) const
 {
@@ -98,34 +60,34 @@ void Door::PrintPart(ShakerPart part) const
     double length = 0.0;
     switch (part)
     {
-    case TOP_RAIL:
-        width = dimensions.shakerparts.GetPartWidth(TOP_RAIL);
-        length = dimensions.shakerparts.GetCutLength(construction, TOP_RAIL, door_width, door_height);
+    case ShakerPart::TOP_RAIL:
+        width = dimensions.shakerparts.GetPartWidth(ShakerPart::TOP_RAIL);
+        length = dimensions.shakerparts.GetCutLength(construction, ShakerPart::TOP_RAIL, door_width, door_height);
         std::cout << " Top Rail Width: " << width << " Length: " << length << "\n";
         break;
-    case BOTTOM_RAIL:
-        width = dimensions.shakerparts.GetPartWidth(BOTTOM_RAIL);
-        length = dimensions.shakerparts.GetCutLength(construction, BOTTOM_RAIL, door_width, door_height);
+    case ShakerPart::BOTTOM_RAIL:
+        width = dimensions.shakerparts.GetPartWidth(ShakerPart::BOTTOM_RAIL);
+        length = dimensions.shakerparts.GetCutLength(construction, ShakerPart::BOTTOM_RAIL, door_width, door_height);
         std::cout << " Bottom Rail Width: " << width << " Length: " << length << "\n";
         break;
-    case MID_RAIL:
-        width = dimensions.shakerparts.GetPartWidth(MID_RAIL);
-        length = dimensions.shakerparts.GetCutLength(construction, MID_RAIL, door_width, door_height);
+    case ShakerPart::MID_RAIL:
+        width = dimensions.shakerparts.GetPartWidth(ShakerPart::MID_RAIL);
+        length = dimensions.shakerparts.GetCutLength(construction, ShakerPart::MID_RAIL, door_width, door_height);
         std::cout << " Mid Rail Width: " << width << " Length: " << length << "\n";
         break;
-    case LEFT_STILE:
-        width = dimensions.shakerparts.GetPartWidth(LEFT_STILE);
-        length = dimensions.shakerparts.GetCutLength(construction, LEFT_STILE, door_width, door_height);
+    case ShakerPart::LEFT_STILE:
+        width = dimensions.shakerparts.GetPartWidth(ShakerPart::LEFT_STILE);
+        length = dimensions.shakerparts.GetCutLength(construction, ShakerPart::LEFT_STILE, door_width, door_height);
         std::cout << " Left Stile Width: " << width << " Length: " << length << "\n";
         break;
-    case RIGHT_STILE:
-        width = dimensions.shakerparts.GetPartWidth(RIGHT_STILE);
-        length = dimensions.shakerparts.GetCutLength(construction, RIGHT_STILE, door_width, door_height);
+    case ShakerPart::RIGHT_STILE:
+        width = dimensions.shakerparts.GetPartWidth(ShakerPart::RIGHT_STILE);
+        length = dimensions.shakerparts.GetCutLength(construction, ShakerPart::RIGHT_STILE, door_width, door_height);
         std::cout << " Right Stile Width: " << width << " Length: " << length << "\n";
         break;
-    case MID_STILE:
-        width = dimensions.shakerparts.GetPartWidth(MID_STILE);
-        length = dimensions.shakerparts.GetCutLength(construction, MID_STILE, door_width, door_height);
+    case ShakerPart::MID_STILE:
+        width = dimensions.shakerparts.GetPartWidth(ShakerPart::MID_STILE);
+        length = dimensions.shakerparts.GetCutLength(construction, ShakerPart::MID_STILE, door_width, door_height);
         std::cout << " Mid Stile Width: " << width << " Length: " << length << "\n";
         break;
     }
@@ -143,14 +105,14 @@ void Door::Print() const
     std::cout << " Finished Height: " << dimensions.finishedHeight << "\n";
     std::cout << " Oversize Width: " << dimensions.oversizeWidth << " ";
     std::cout << " Oversize Height: " << dimensions.oversizeWidth << "\n";
-    PrintPart(TOP_RAIL);
-    PrintPart(BOTTOM_RAIL);
-    PrintPart(LEFT_STILE);
-    PrintPart(RIGHT_STILE);
+    PrintPart(ShakerPart::TOP_RAIL);
+    PrintPart(ShakerPart::BOTTOM_RAIL);
+    PrintPart(ShakerPart::LEFT_STILE);
+    PrintPart(ShakerPart::RIGHT_STILE);
     if (dimensions.shakerparts.mid_rail_count>0)
-        PrintPart(MID_RAIL);
+        PrintPart(ShakerPart::MID_RAIL);
     if (dimensions.shakerparts.mid_stile_count > 0)
-        PrintPart(MID_STILE);
+        PrintPart(ShakerPart::MID_STILE);
     std::cout << " Panel Width " << dimensions.panel.GetPanelWidth(dimensions.shakerparts, dimensions.GetOversizedWidth(), dimensions.GetOversizedHeight()) << "\n";
     std::cout << " Panel Height " << dimensions.panel.GetPanelHeight(dimensions.shakerparts, dimensions.GetOversizedWidth(), dimensions.GetOversizedHeight()) << "\n";
     std::cout << " Panel Count " << dimensions.panel.GetPanelCount(dimensions.shakerparts) << "\n";
@@ -188,7 +150,7 @@ void Door::PrintConstruction() const
     }
 }
 
-void Door::AppendTigerStopCuts(std::vector<TigerStopCut>& rails, std::vector<TigerStopCut>& stile) const
+void Door::AppendTigerStopCuts(std::vector<TigerStopItem>& cutlist) const
 {
     const double w = dimensions.GetOversizedWidth();
     const double h = dimensions.GetOversizedHeight();
@@ -199,32 +161,25 @@ void Door::AppendTigerStopCuts(std::vector<TigerStopCut>& rails, std::vector<Tig
             if (qty == 0)
                 return;
 
-            if (GetStockGroup(part) == StockGroup::Rail)
-            {
-                TigerStopCut c{};
-                c.length = parts.GetCutLength(construction, part, w, h);
-                c.quantity = qty;
-                c.nominal_width = parts.width[part];   
-                rails.push_back(c);
-            }
-            if (GetStockGroup(part) == StockGroup::Stile)
-            {
-                TigerStopCut c{};
-                c.length = parts.GetCutLength(construction, part, w, h);
-                c.quantity = qty;
-                c.nominal_width = parts.width[part];
-                stile.push_back(c);
-            }
+            TigerStopItem c{};
+            if (getConstruction() == Construction::Shaker)
+			    c.group = GetStockGroup(part);
+            if (getConstruction() == Construction::SmallShaker)
+                c.group = StockGroup::Small_Shaker_Rail;
+            c.length = parts.GetCutLength(construction, part, w, h);
+            c.quantity = qty;
+            c.nominal_width = parts.width[static_cast<int>(part)];
+            cutlist.push_back(c);
         };
 
-    if (getConstruction() == Construction::Shaker)
+    if (getConstruction() == Construction::Shaker || getConstruction() == Construction::SmallShaker)
     {
-        add(TOP_RAIL, quantity);
-        add(BOTTOM_RAIL, quantity);
-        add(LEFT_STILE, quantity);
-        add(RIGHT_STILE, quantity);
-        add(MID_RAIL, quantity * parts.mid_rail_count);
-        add(MID_STILE, quantity * parts.mid_stile_count);
+        add(ShakerPart::TOP_RAIL, quantity);
+        add(ShakerPart::BOTTOM_RAIL, quantity);
+        add(ShakerPart::LEFT_STILE, quantity);
+        add(ShakerPart::RIGHT_STILE, quantity);
+        add(ShakerPart::MID_RAIL, quantity * parts.mid_rail_count);
+        add(ShakerPart::MID_STILE, quantity * parts.mid_stile_count);
     }
     //if (getConstruction() == Construction::SmallShaker)
     //{
@@ -277,28 +232,37 @@ void DoorList::ReadCsvTable(CsvTable doorsTable)
     std::cout << "\nProcessed " << m_doors.size() << " valid door(s)\n";
 }
 
+bool SortByGroupThenWidthThenLength(const TigerStopItem& a, const TigerStopItem& b)
+{
+    if (a.group != b.group)
+        return a.group < b.group;
+    if (a.nominal_width != b.nominal_width)
+        return a.nominal_width < b.nominal_width;
+    return a.length < b.length;
+}
+
 void DoorList::WriteTigerStopCsvs(const char* folder) const
 {
-    std::vector<TigerStopCut> railcuts;
-    std::vector<TigerStopCut> stilecuts;
+    std::vector<TigerStopItem> cutlist;
 
     for (const auto& door : m_doors)
     {
-        if (door.getConstruction() == Construction::Shaker)
-            door.AppendTigerStopCuts(railcuts, stilecuts);
-        //if (door.getConstruction() == Construction::SmallShaker)
-        //    door.AppendTigerStopCuts(m_smallShakerTigerCuts);
+        if (door.getConstruction() == Construction::Shaker || door.getConstruction() == Construction::SmallShaker)
+            door.AppendTigerStopCuts(cutlist);
     }
 
     //for (const auto& door : m_doors)
     //    door.Print();
 
-    //constexpr double EPS = 0.0001;
-    std::vector<TigerStopCut> out;
+
 
     //consolidate
-     
-     
+    std::sort(cutlist.begin(), cutlist.end(), SortByGroupThenWidthThenLength);
+ 
+    for (const auto& cut : cutlist)
+    {
+
+    }
     //for (const auto& c : cuts)
     //{
     //    bool merged = false;

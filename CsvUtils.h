@@ -1,22 +1,72 @@
 #pragma once
+#include <string>        // std::string
+#include <vector>        // std::vector
+#include <unordered_map>// std::unordered_map
+#include <fstream>       // std::ifstream, std::ofstream
+#include <iostream>      // std::ostream
+#include <algorithm>    // std::transform, std::find_if
+#include <cctype>       // std::isspace, std::toupper
+#include <cstdlib>      // std::strtol, std::strtod
+#include <climits>      // INT_MIN, INT_MAX
+#include <cstring>      // strncpy_s
+#include <filesystem>   // extractparentFolderName
+#include <windows.h>
 
-#include <string>
-#include <cstdlib>   // std::strtol, std::strtod
-#include <cerrno>
-#include <climits>
-#include <cstring>
-#include "CsvReader.h"
-#include "Door.h"
-#include <iostream>
-#include <filesystem>
-#include <algorithm>
-#include <cctype>
 
-//struct CsvError
-//{
-//    size_t row_index;     // 1-based, CSV row number
-//    std::string message;
-//};
+//forward declarations
+struct CsvError;
+struct CsvRow;
+struct CsvTable;
+class CsvReader;
+inline std::string Trim(std::string s);
+inline std::string ToUpper(std::string s);
+inline void CopyCsvText(const CsvRow& row, const char* columnName, char* dst, size_t dstSize);
+//inline bool ReadInt(const CsvRow& row, const char* columnName, unsigned int& outValue);
+inline bool ReadInt(const CsvRow& row, const char* columnName, int& outValue);
+inline bool ReadUInt(const CsvRow& row, const char* columnName, unsigned int& outValue);
+inline bool ReadDouble(const CsvRow& row, const char* columnName, double& outValue);
+inline std::string extractparentFolderName(const std::string& fullPath);
+inline void WriteField(std::ostream& os, const char* s);
+
+struct CsvError
+{
+    size_t row_index;     // 1-based, CSV row number
+    std::string message;
+};
+
+struct CsvRow
+{
+    std::unordered_map<std::string, std::string> fields;
+
+    const std::string& operator[](const std::string& key) const
+    {
+        static const std::string empty;
+        auto it = fields.find(key);
+        return (it != fields.end()) ? it->second : empty;
+    }
+};
+
+struct CsvTable
+{
+    std::vector<std::string> headers;
+    std::vector<CsvRow> rows;
+};
+
+class CsvFileDialog
+{
+public:
+    inline static std::string Open();
+};
+
+class CsvReader
+{
+public:
+    static CsvTable Read(const std::string& path);
+
+private:
+    static std::vector<std::string> ParseLine(const std::string& line);
+};
+
 
 inline std::string Trim(std::string s)
 {
@@ -42,7 +92,7 @@ inline void CopyCsvText(const CsvRow& row, const char* columnName, char* dst, si
     strncpy_s(dst, dstSize, value.c_str(), _TRUNCATE);
 }
 
-inline bool ReadInt(const CsvRow& row, const char* columnName, unsigned int& outValue)
+inline bool ReadInt(const CsvRow& row, const char* columnName, int& outValue)
 {
     const std::string& s = row[columnName];
 
@@ -57,10 +107,32 @@ inline bool ReadInt(const CsvRow& row, const char* columnName, unsigned int& out
     if (errno != 0 || end == s.c_str() || *end != '\0')
         return false;
 
-    if (v < INT_MIN || v > INT_MAX)
+    if (v < INT_MIN || v > static_cast<long>(INT_MAX))
         return false;
 
     outValue = static_cast<int>(v);
+    return true;
+}
+
+inline bool ReadUInt(const CsvRow& row, const char* columnName, unsigned int& outValue)
+{
+    const std::string& s = row[columnName];
+
+    if (s.empty())
+        return false;
+
+    char* end = nullptr;
+    errno = 0;
+
+    unsigned long v = std::strtoul(s.c_str(), &end, 10);
+
+    if (errno != 0 || end == s.c_str() || *end != '\0')
+        return false;
+
+    if (v > UINT_MAX)
+        return false;
+
+    outValue = static_cast<unsigned int>(v);
     return true;
 }
 
@@ -83,57 +155,222 @@ inline bool ReadDouble(const CsvRow& row, const char* columnName, double& outVal
     return true;
 }
 
-struct EnumMap
-{
-    const char* name;
-    int value;
-};
-
-
-inline bool ReadFaceType(const CsvRow& row, FaceType& out)
-{
-    const std::string& s = ToUpper(row["Type"]);
-
-    if (s == "DOOR") { out = FaceType::Door; return true; }
-    if (s == "DRAWER") { out = FaceType::Drawer;   return true; }
-    if (s == "PANEL") { out = FaceType::Panel; return true; }
-
-    return false;
-}
-
-inline bool ReadConstruction(const CsvRow& row, Construction& out)
-{
-    const std::string& s = ToUpper(row["Construction"]);
-
-    if (s == "SLAB") { out = Construction::Slab; return true; }
-    if (s == "SHAKER") { out = Construction::Shaker;   return true; }
-    if (s == "SMALL_SHAKER") { out = Construction::SmallShaker; return true; }
-
-    return false;
-}
-
-inline bool ReadOrientation(const CsvRow& row, Orientation& out)
-{
-    const std::string& s = ToUpper(row["Grain Direction"]);
-
-    if (s == "VERTICAL") { out = Orientation::VERTICAL; return true; }
-    if (s == "HORIZONTAL") { out = Orientation::HORIZONTAL;   return true; }
-
-    return false;
-}
-
-inline bool ReadPanel(const CsvRow& row, bool& out)
-{
-    const std::string& s = ToUpper(row["Panel"]);
-
-    if (s == "YES") { out = true; return true; }
-    else out = false;
-
-    return false;
-}
-
 inline std::string extractparentFolderName(const std::string& fullPath)
 {
     std::filesystem::path p(fullPath);
     return p.parent_path().filename().string();
+}
+
+
+// NOTE:
+// This CSV parser assumes:
+// - One record per line
+// - No multiline fields
+// - LibreOffice / internally generated CSVs
+// Escaped quotes ("") ARE supported.
+
+inline std::vector<std::string> CsvReader::ParseLine(const std::string& line)
+{
+    std::vector<std::string> result;
+    std::string field;
+    bool inQuotes = false;
+
+    for (size_t i = 0; i < line.size(); ++i)
+    {
+        char c = line[i];
+
+        if (c == '"')
+        {
+            if (inQuotes && i + 1 < line.size() && line[i + 1] == '"')
+            {
+                field += '"';  // escaped quote
+                ++i;           // skip second quote
+            }
+            else
+            {
+                inQuotes = !inQuotes;
+            }
+        }
+        else if (c == ',' && !inQuotes)
+        {
+            result.push_back(field);
+            field.clear();
+        }
+        else
+        {
+            field += c;
+        }
+    }
+
+    result.push_back(field);
+    return result;
+}
+
+//inline std::vector<std::string> CsvReader::ParseLine(const std::string& line)
+//{
+//    std::vector<std::string> result;
+//    std::string field;
+//    bool inQuotes = false;
+//
+//    for (size_t i = 0; i < line.size(); ++i)
+//    {
+//        char c = line[i];
+//
+//        if (c == '"')
+//        {
+//            inQuotes = !inQuotes;
+//        }
+//        else if (c == ',' && !inQuotes)
+//        {
+//            result.push_back(field);
+//            field.clear();
+//        }
+//        else
+//        {
+//            field += c;
+//        }
+//    }
+//
+//    result.push_back(field);
+//    return result;
+//}
+
+inline CsvTable CsvReader::Read(const std::string& path)
+{
+    CsvTable table;
+    std::ifstream file(path);
+
+    if (!file.is_open())
+        return table;
+
+    std::string line;
+
+    // 1) Read header row
+    if (!std::getline(file, line))
+        return table;
+
+    table.headers = ParseLine(line);
+
+    // 2) Read data rows
+    while (std::getline(file, line))
+    {
+        auto values = ParseLine(line);
+        CsvRow row;
+
+        for (size_t i = 0; i < table.headers.size(); ++i)
+        {
+            std::string value;
+            if (i < values.size())
+                value = values[i];
+
+            row.fields[table.headers[i]] = value;
+        }
+
+        table.rows.push_back(std::move(row));
+    }
+
+    return table;
+}
+
+inline std::string CsvFileDialog::Open()
+{
+    char fileName[MAX_PATH] = "";
+
+    char cwd[MAX_PATH];
+    GetCurrentDirectoryA(MAX_PATH, cwd);
+
+    OPENFILENAMEA ofn {};
+    ofn.lStructSize = sizeof(ofn);
+    ofn.lpstrFilter =
+        "CSV Files (*.csv)\0*.csv\0"
+        "All Files (*.*)\0*.*\0";
+    ofn.lpstrFile = fileName;
+    ofn.lpstrInitialDir = cwd;
+    ofn.nMaxFile = MAX_PATH;
+    ofn.Flags = OFN_EXPLORER | OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
+    ofn.lpstrDefExt = "csv";
+
+    if (GetOpenFileNameA(&ofn))
+        return fileName;
+
+    return {};
+}
+
+class Row
+{
+public:
+    explicit Row(std::ostream& os)
+        : os_(os), first_(true)
+    {}
+
+    Row& Field(const char* s)
+    {
+        WriteSeparator();
+        if (s)
+            WriteField(os_, s);
+        // else write empty field
+        return *this;
+    }
+
+    Row& Field(int v)
+    {
+        WriteSeparator();
+        os_ << v;
+        return *this;
+    }
+
+    Row& Field(double v)
+    {
+        WriteSeparator();
+        os_ << v;
+        return *this;
+    }
+
+    void End()
+    {
+        os_ << '\n';
+    }
+
+private:
+    void WriteSeparator()
+    {
+        if (!first_)
+            os_ << ',';
+        first_ = false;
+    }
+
+    std::ostream& os_;
+    bool first_;
+};
+
+inline void WriteField(std::ostream& os, const char* s)
+{
+    if (!s)
+        return;
+
+    bool needsQuotes = false;
+    for (const char* p = s; *p; ++p)
+    {
+        if (*p == ',' || *p == '"' || *p == '\n' || *p == '\r')
+        {
+            needsQuotes = true;
+            break;
+        }
+    }
+
+    if (!needsQuotes)
+    {
+        os << s;
+        return;
+    }
+
+    os << '"';
+    for (const char* p = s; *p; ++p)
+    {
+        if (*p == '"')
+            os << "\"\"";
+        else
+            os << *p;
+    }
+    os << '"';
 }

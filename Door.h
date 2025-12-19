@@ -1,17 +1,36 @@
 #pragma once
-#include <vector>
+#include "CsvUtils.h"
 
+//constants
 constexpr size_t MAXTEXTSIZE = 32;
 constexpr double ALLOWANCE = 0.015625;
+
+//struct forward declarations
 struct CsvRow;
 struct CsvTable;
-struct TigerStopCut;
+struct TigerStopItem;
 
-struct CsvError
+enum class StockGroup;
+enum class FaceType;
+enum class Construction;
+enum class Orientation;
+enum class ShakerPart;
+
+//function forward declarations
+inline std::string MakeTigerStopFilename(StockGroup group, double width, std::string jobname);
+inline std::string FormatTrimmed(double value);
+inline StockGroup GetStockGroup(ShakerPart part);
+
+//struct definitions
+
+enum class StockGroup
 {
-	size_t row_index;     // 1-based, CSV row number
-	std::string message;
+	Rail,
+	Stile,
+	Small_Shaker_Rail
 };
+
+
 
 enum class FaceType
 {
@@ -33,7 +52,7 @@ enum class Orientation
 	HORIZONTAL
 };
 
-enum ShakerPart
+enum class ShakerPart
 {
 	TOP_RAIL,
 	BOTTOM_RAIL,
@@ -44,9 +63,17 @@ enum ShakerPart
 	SHAKERPARTCOUNT
 };
 
+struct TigerStopItem
+{
+	StockGroup group;
+	double length;
+	unsigned int quantity;
+	double nominal_width;
+};
+
 struct ShakerParts
 {
-	double width[SHAKERPARTCOUNT] = {};
+	double width[static_cast<int>(ShakerPart::SHAKERPARTCOUNT)] = {};
 	double rabbet = 0.0;
 	double stick_tolerance = 0.0;
 	double cope_tolerance = 0.0;
@@ -56,14 +83,14 @@ struct ShakerParts
 	{ 
 		switch(part)
 		{
-		case TOP_RAIL:
-		case BOTTOM_RAIL:
-		case LEFT_STILE:
-		case RIGHT_STILE:
-			return width[part] - stick_tolerance;
-		case MID_RAIL:
-		case MID_STILE:
-			return width[part] - (stick_tolerance * 2.0);
+		case ShakerPart::TOP_RAIL:
+		case ShakerPart::BOTTOM_RAIL:
+		case ShakerPart::LEFT_STILE:
+		case ShakerPart::RIGHT_STILE:
+			return width[static_cast<int>(part)] - stick_tolerance;
+		case ShakerPart::MID_RAIL:
+		case ShakerPart::MID_STILE:
+			return width[static_cast<int>(part)] - (stick_tolerance * 2.0);
 		default:
 			return 0.0;
 		}
@@ -74,15 +101,15 @@ struct ShakerParts
 		{
 			switch (part)
 			{
-			case TOP_RAIL:
-			case BOTTOM_RAIL:
-			case MID_RAIL:
-				return doorWidth - GetPartWidth(LEFT_STILE) - GetPartWidth(RIGHT_STILE) + (rabbet * 2) + cope_tolerance * 2;
-			case LEFT_STILE:
-			case RIGHT_STILE:
+			case ShakerPart::TOP_RAIL:
+			case ShakerPart::BOTTOM_RAIL:
+			case ShakerPart::MID_RAIL:
+				return doorWidth - GetPartWidth(ShakerPart::LEFT_STILE) - GetPartWidth(ShakerPart::RIGHT_STILE) + (rabbet * 2) + cope_tolerance * 2;
+			case ShakerPart::LEFT_STILE:
+			case ShakerPart::RIGHT_STILE:
 				return doorHeight;
-			case MID_STILE:
-				return doorHeight - GetPartWidth(TOP_RAIL) - GetPartWidth(BOTTOM_RAIL) - (GetPartWidth(MID_RAIL) * mid_rail_count) + (rabbet * 2) + cope_tolerance * 2;
+			case ShakerPart::MID_STILE:
+				return doorHeight - GetPartWidth(ShakerPart::TOP_RAIL) - GetPartWidth(ShakerPart::BOTTOM_RAIL) - (GetPartWidth(ShakerPart::MID_RAIL) * mid_rail_count) + (rabbet * 2) + cope_tolerance * 2;
 			default:
 				return 0.0;
 			}
@@ -91,13 +118,13 @@ struct ShakerParts
 		{
 			switch (part)
 			{
-			case TOP_RAIL:
-			case BOTTOM_RAIL:
-			case MID_RAIL:
+			case ShakerPart::TOP_RAIL:
+			case ShakerPart::BOTTOM_RAIL:
+			case ShakerPart::MID_RAIL:
 				return doorWidth;
-			case LEFT_STILE:
-			case RIGHT_STILE:
-			case MID_STILE:
+			case ShakerPart::LEFT_STILE:
+			case ShakerPart::RIGHT_STILE:
+			case ShakerPart::MID_STILE:
 				return doorHeight;
 			default:
 				return 0.0;
@@ -114,11 +141,11 @@ struct Panel
 private:
 	double getWidth(ShakerParts parts, double doorWidth) const
 	{
-		return doorWidth - parts.GetPartWidth(LEFT_STILE) - parts.GetPartWidth(RIGHT_STILE) - parts.GetPartWidth(MID_STILE) * parts.mid_stile_count - ALLOWANCE;
+		return doorWidth - parts.GetPartWidth(ShakerPart::LEFT_STILE) - parts.GetPartWidth(ShakerPart::RIGHT_STILE) - parts.GetPartWidth(ShakerPart::MID_STILE) * parts.mid_stile_count - ALLOWANCE;
 	}
 	double getHeight(ShakerParts parts, double doorHeight) const
 	{
-		return doorHeight - parts.GetPartWidth(TOP_RAIL) - parts.GetPartWidth(BOTTOM_RAIL) - parts.GetPartWidth(MID_RAIL) * parts.mid_rail_count - ALLOWANCE;
+		return doorHeight - parts.GetPartWidth(ShakerPart::TOP_RAIL) - parts.GetPartWidth(ShakerPart::BOTTOM_RAIL) - parts.GetPartWidth(ShakerPart::MID_RAIL) * parts.mid_rail_count - ALLOWANCE;
 	}
 public:
 	double GetPanelWidth(ShakerParts parts, double doorWidth, double doorHeight) const
@@ -186,7 +213,49 @@ public:
 	Construction getConstruction() const { return construction; }
 	bool Create(const CsvRow& row, size_t row_index, std::vector<CsvError>& errors);
 	void Print() const;
-	void AppendTigerStopCuts(std::vector<TigerStopCut>& rails, std::vector<TigerStopCut>& stile) const;
+	void AppendTigerStopCuts(std::vector<TigerStopItem>& cutlist) const;
+private:
+	inline bool ReadFaceType(const CsvRow& row, FaceType& out)
+	{
+		const std::string& s = ToUpper(row["Type"]);
+
+		if (s == "DOOR") { out = FaceType::Door; return true; }
+		if (s == "DRAWER") { out = FaceType::Drawer;   return true; }
+		if (s == "PANEL") { out = FaceType::Panel; return true; }
+
+		return false;
+	}
+
+	inline bool ReadConstruction(const CsvRow& row, Construction& out)
+	{
+		const std::string& s = ToUpper(row["Construction"]);
+
+		if (s == "SLAB") { out = Construction::Slab; return true; }
+		if (s == "SHAKER") { out = Construction::Shaker;   return true; }
+		if (s == "SMALL_SHAKER") { out = Construction::SmallShaker; return true; }
+
+		return false;
+	}
+
+	inline bool ReadOrientation(const CsvRow& row, Orientation& out)
+	{
+		const std::string& s = ToUpper(row["Grain Direction"]);
+
+		if (s == "VERTICAL") { out = Orientation::VERTICAL; return true; }
+		if (s == "HORIZONTAL") { out = Orientation::HORIZONTAL;   return true; }
+
+		return false;
+	}
+
+	inline bool ReadPanel(const CsvRow& row, bool& out)
+	{
+		const std::string& s = ToUpper(row["Panel"]);
+
+		if (s == "YES") { out = true; return true; }
+		else out = false;
+
+		return false;
+	}
 };
 
 class DoorList
@@ -199,3 +268,52 @@ public:
 	void Print();
 
 };
+
+
+
+inline StockGroup GetStockGroup(ShakerPart part)
+{
+	switch (part)
+	{
+	case ShakerPart::TOP_RAIL:
+	case ShakerPart::BOTTOM_RAIL:
+	case ShakerPart::MID_RAIL:
+		return StockGroup::Rail;
+
+	case ShakerPart::LEFT_STILE:
+	case ShakerPart::RIGHT_STILE:
+	case ShakerPart::MID_STILE:
+		return StockGroup::Stile;
+
+	default:
+		return StockGroup::Rail; // safe fallback
+	}
+}
+
+
+
+inline std::string FormatTrimmed(double value)
+{
+	// 1. Round to 2 decimal places
+	std::string s = std::format("{:.2f}", value);
+
+	// 2. Remove trailing zeros
+	if (s.find('.') != std::string::npos)
+	{
+		s.erase(s.find_last_not_of('0') + 1, std::string::npos);
+		// 3. Remove trailing decimal point if it's the last character
+		if (s.back() == '.')
+		{
+			s.pop_back();
+		}
+	}
+	return s;
+}
+
+inline std::string MakeTigerStopFilename(StockGroup group, double width, std::string jobname)
+{
+	std::string g = (group == StockGroup::Rail) ? "Rails" : "Stiles";
+	std::string s_width = FormatTrimmed(width);
+	std::string formatted_str = std::format("{} {} {}inch", jobname, g, s_width);
+	return formatted_str;
+}

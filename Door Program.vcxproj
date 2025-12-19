@@ -127,18 +127,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="CsvFileDialog.cpp" />
-    <ClCompile Include="CsvReader.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Door.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="CsvFileDialog.h" />
-    <ClInclude Include="CsvReader.h" />
     <ClInclude Include="CsvUtils.h" />
-    <ClInclude Include="CsvWriter.h" />
     <ClInclude Include="Door.h" />
-    <ClInclude Include="TigerStop.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
