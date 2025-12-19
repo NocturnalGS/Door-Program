@@ -10,7 +10,7 @@ int main()
     GetCurrentDirectoryA(MAX_PATH, cwd);
     printf("CWD: %s\n", cwd);
     std::string jobName = extractparentFolderName(cwd);
-    WriteExample();
+    //vWriteExample();
     std::string csvPath = CsvFileDialog::Open();
     if (csvPath.empty())
     {
