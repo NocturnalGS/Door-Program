@@ -13,7 +13,7 @@ int main()
     char cwd[MAX_PATH];
     GetCurrentDirectoryA(MAX_PATH, cwd);
     printf("CWD: %s\n", cwd);
-    //Test
+    std::string jobName = extractparentFolderName(cwd);
 
     std::string csvPath = CsvFileDialog::Open();
     if (csvPath.empty())
@@ -22,40 +22,14 @@ int main()
         return 0;
     }
 
-    DoorList doorlist;
     CsvTable doortable = CsvReader::Read(csvPath);
-    doorlist.ReadCsvTable(doortable);
+    DoorList doorlist(doortable);
 
-    std::string jobname = "Nocturnal";
-    std::string filename = MakeTigerStopFilename(StockGroup::Rail, 2.5, jobname);
+    doorlist.WriteTigerStopCsvs(cwd);
 
-    std::cout << jobname << "\n";
+
+    std::string filename = MakeTigerStopFilename(StockGroup::Rail, 2.5, jobName);
     std::cout << filename << "\n";
-
-
-    //// Write out using csv::Row
-    //std::ofstream file("parts.csv");
-
-    //// Headers
-    //{
-    //    csv::Row headerRow(file);
-    //    for (const auto& h : table.headers)
-    //        headerRow.Field(h.c_str());
-    //    headerRow.End();
-    //}
-
-    //// Data
-    //for (const auto& row : table.rows)
-    //{
-    //    csv::Row out(file);
-
-    //    for (const auto& header : table.headers)
-    //    {
-    //        out.Field(row[header].c_str());
-    //    }
-
-    //    out.End();
-    //}
 
     return 0;
 }
