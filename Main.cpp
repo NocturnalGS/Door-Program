@@ -8,9 +8,9 @@ int main()
 {
     char cwd[MAX_PATH];
     GetCurrentDirectoryA(MAX_PATH, cwd);
-    //printf("CWD: %s\n", cwd);
     std::string jobName = extractparentFolderName(cwd);
-    //vWriteExample();
+    std::cout << jobName << "\n";
+    /*WriteExample();*/
     std::string csvPath = CsvFileDialog::Open();
     if (csvPath.empty())
     {
@@ -20,8 +20,9 @@ int main()
 
     CsvTable doortable = CsvReader::Read(csvPath);
     DoorList doorlist(doortable);
+    doorlist.Print();
 
-    //doorlist.WriteTigerStopCsvs(cwd);
+    doorlist.WriteTigerStopCsvs(cwd);
 
 
     std::string filename = MakeTigerStopFilename(StockGroup::Rail, 2.5, jobName);
