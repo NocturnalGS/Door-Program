@@ -1,5 +1,10 @@
 #include "Door.h"
 #include "HTML.h"
+#include <chrono>
+#include <iomanip>
+#include <sstream>
+#include <ctime>
+
 
 bool Door::Create(const CsvRow& row, size_t row_index, std::vector<CsvError>& errors)
 {
@@ -36,12 +41,12 @@ bool Door::Create(const CsvRow& row, size_t row_index, std::vector<CsvError>& er
     ReadDouble(row, "Rabbet", dimensions.shakerparts.rabbet);
     ReadDouble(row, "Bone Detail", dimensions.bonedetail);
 
-    ReadDouble(row, "Bottom Rail Width", dimensions.shakerparts.width[static_cast<int>(ShakerPart::BOTTOM_RAIL)]);
-    ReadDouble(row, "Top Rail Width", dimensions.shakerparts.width[static_cast<int>(ShakerPart::TOP_RAIL)]);
-    ReadDouble(row, "Left Stile Width", dimensions.shakerparts.width[static_cast<int>(ShakerPart::LEFT_STILE)]);
-    ReadDouble(row, "Right Stile Width", dimensions.shakerparts.width[static_cast<int>(ShakerPart::RIGHT_STILE)]);
-    ReadDouble(row, "Mid Rail/Stile Width", dimensions.shakerparts.width[static_cast<int>(ShakerPart::MID_RAIL)]);
-    ReadDouble(row, "Mid Rail/Stile Width", dimensions.shakerparts.width[static_cast<int>(ShakerPart::MID_STILE)]);
+    ReadDouble(row, "Bottom Rail", dimensions.shakerparts.width[static_cast<int>(ShakerPart::BOTTOM_RAIL)]);
+    ReadDouble(row, "Top Rail", dimensions.shakerparts.width[static_cast<int>(ShakerPart::TOP_RAIL)]);
+    ReadDouble(row, "Left Stile", dimensions.shakerparts.width[static_cast<int>(ShakerPart::LEFT_STILE)]);
+    ReadDouble(row, "Right Stile", dimensions.shakerparts.width[static_cast<int>(ShakerPart::RIGHT_STILE)]);
+    ReadDouble(row, "Mid Rail/Stile", dimensions.shakerparts.width[static_cast<int>(ShakerPart::MID_RAIL)]);
+    ReadDouble(row, "Mid Rail/Stile", dimensions.shakerparts.width[static_cast<int>(ShakerPart::MID_STILE)]);
 
     ReadDouble(row, "StickTolerance", dimensions.shakerparts.stick_tolerance);
     ReadDouble(row, "CopeTolerance", dimensions.shakerparts.cope_tolerance);
@@ -55,7 +60,7 @@ bool Door::Create(const CsvRow& row, size_t row_index, std::vector<CsvError>& er
     return true;
 }
 
-bool Door::Validate(double& outWidth, double& outHeight) const
+bool Door::ValidatePanel(double& outWidth, double& outHeight) const
 {
 	const double minPanelSize = 1.0;
 	outWidth = dimensions.panel.GetInnerPanelWidth(construction, dimensions.shakerparts, dimensions.GetOversizedWidth(), dimensions.GetOversizedHeight());
@@ -64,6 +69,58 @@ bool Door::Validate(double& outWidth, double& outHeight) const
     {
         if (outWidth < minPanelSize || outHeight < minPanelSize)
             return false;
+    }
+    return true;
+}
+bool Door::ValidateShakerParts(std::string& error) const
+{
+    if (construction == Construction::Shaker)
+    {
+        for (size_t i = 0; i < static_cast<int>(ShakerPart::SHAKERPARTCOUNT); i++)
+        {
+            if (dimensions.shakerparts.width[i] <= 0.0)
+            {
+                std::string part = dimensions.shakerparts.GetPartString(static_cast<ShakerPart>(i));
+                if (static_cast<ShakerPart>(i) == ShakerPart::MID_RAIL && dimensions.shakerparts.mid_rail_count > 0)
+                {
+                    error += part + " Width undefined";
+                    return false;
+                }
+                else if (static_cast<ShakerPart>(i) == ShakerPart::MID_STILE && dimensions.shakerparts.mid_stile_count > 0)
+                {
+                    error += part + " Width undefined";
+                    return false;
+                }
+                else
+                {
+                    error += part + " Width undefined";
+                    return false;
+                }
+            }
+        }
+    }
+    if (construction == Construction::SmallShaker)
+    {
+        for (size_t i = 0; i < static_cast<int>(ShakerPart::SHAKERPARTCOUNT); i++)
+        {
+            if (dimensions.shakerparts.width[i] <= 0.0)
+            {
+                std::string part = dimensions.shakerparts.GetPartString(static_cast<ShakerPart>(i));
+                if (static_cast<ShakerPart>(i) == ShakerPart::MID_RAIL)
+                {
+                    continue;
+                }
+                else if (static_cast<ShakerPart>(i) == ShakerPart::MID_STILE)
+                {
+                    continue;
+                }
+                else
+                {
+                    error += part + " Width undefined";
+                    return false;
+                }
+            }
+        }
     }
     return true;
 }
@@ -223,7 +280,7 @@ void DoorList::ReadCsvTable(CsvTable doorsTable)
         double panelWidth = 0.0;
         double panelHeight = 0.0;
 
-        bool isValid = door.Validate(panelWidth, panelHeight);
+        bool isValid = door.ValidatePanel(panelWidth, panelHeight);
 
         if (!isValid)
         {
@@ -232,11 +289,24 @@ void DoorList::ReadCsvTable(CsvTable doorsTable)
                 << " Below minimum panel size. "
                 << panelWidth << " x " << panelHeight << "\n";
         }
+        else
+        {
+            std::string errormsg = "";
+            isValid = door.ValidateShakerParts(errormsg);
+
+            if (!isValid)
+            {
+                std::cout << "Warning: Removed Door "
+                    << door.getNameString() << " " << door.getLabelString()
+                    << " " << errormsg << "\n";
+            }
+        }
 
         return !isValid;
         });
 
     std::cout << "\nProcessed " << m_doors.size() << " valid door(s)\n";
+    makeUniqueLabels();
 }
 
 bool SortByGroupThenWidthThenLength(const TigerStopItem& a, const TigerStopItem& b)
@@ -255,54 +325,152 @@ void DoorList::WriteHTMLReport(const char* jobname) const
     std::string file = std::string(jobname) + " Door Report.html";
     Html::HtmlDocument doc(title);
 
+
+
+
     doc.AddStyle(R"(
 
-    .door-row {
-        display: flex;
-        width: 100%;
-        gap: 6px;
-        align-items: stretch;   /* key: same height */
-        margin-bottom: 6px;
-    }
-    
-    .door-data {
-        flex: 0 0 75%;
-    }
-    
-    .door-drawing {
-        flex: 0 0 25%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    
-    .door-drawing svg {
-        width: 80%;
-        height: auto;
-        max-height: 80%;
-    }
+/* =====================
+   NORMAL LAYOUT
+===================== */
+
+.door-row {
+    display: flex;
+    width: 100%;
+    gap: 1px;
+    align-items: center;
+    margin-bottom: 0px;
+}
+
+.door-data { 
+    flex: 0 0 80%;
+    gap: 1px;
+ }
+
+.door-drawing {
+    flex: 0 0 20%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    align-self: flex-start;
+}
 
 
+.door-drawing svg {
+    width: 85%;
+    height: auto;
+    max-height: 1.1in;   /* tune to taste */
+    display: block;
+}
 
-    .door-grid {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 4px;
+.door-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1px;
+    display: block;
+}
+
+table {
+    border-collapse: collapse;  
+}
+.door-block {
+    border: 1px solid #000;
+    background-color: #ffffff;
+    margin-bottom: 0px;
+    padding: 0px;
+    border-radius: 3px;
+}
+
+.door-block {
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+h1,h2,h3,h4,h5,h6 {
+    white-space: pre; 
+    margin: 0;
+}
+
+p {
+    margin: 0;
+}
+td {
+    padding: 0;
+    margin: 0;
+    white-space: pre;   /* VERY IMPORTANT */
+}
+
+/* =====================
+   PAGE + PRINT CONTROL
+===================== */
+
+@page {
+    size: Letter;
+    margin: 0.125in;
+}
+
+thead { display: table-header-group; }
+tfoot { display: table-footer-group; }
+
+
+.header-space,
+.footer-space {
+    height: 0.1in;        /* adjust to taste */
+}
+
+/* ===== FIXED PRINT HEADER ===== */
+.page-header {
+    position: fixed;
+    top: 0.1in;
+    left: 0.25in;
+    right: 0.25in;
+
+    font-family: Arial, sans-serif;
+    font-size: 12px;
+    padding: 4px 0;
+}
+
+/* Optional footer (if you want later)
+.page-footer {
+    position: fixed;
+    bottom: 0.25in;
+    left: 0.25in;
+    right: 0.25in;
+}
+*/
+
+/* screen preview nice */
+@media screen {
+    body { background:#ccc; }
+
+    .page {
+        width: 8.5in;
+        margin: 0 auto;
+        background: white;
+        box-shadow: 0 0 5px rgba(0,0,0,0.4);
     }
-    .door-block {
-        border: 1px solid #000;
-        background-color: #ffffff;
-        margin-bottom: 4px;
-        padding: 1px;
-        border-radius: 6px;
-    }
-    td {
-        white-space: pre;  /* preserves spaces and tabs inside table cells */
-    }
-    h1, h2, h3, h4, h5, h6 {
-        white-space: pre; /* preserve spaces and tabs */
-    }
-    )");
+}
+.door-block {
+   break-inside: avoid;
+   page-break-inside: avoid;
+}
+
+)");
+
+
+    doc.AddRawHtml(R"(
+<table class="page-table">
+
+<thead>
+<tr><td>
+    <div class="header-space"></div>
+</td></tr>
+</thead>
+
+<tbody>
+<tr><td>
+)");
+
 
     doc.BeginGrid("door-grid");
 
@@ -316,7 +484,7 @@ void DoorList::WriteHTMLReport(const char* jobname) const
         unsigned int quantity = door.getQuantity();
         std::string spacer = "  |  ";
 
-        std::string header = std::string(door.getConstructionString()) + " " + std::string(door.getTypeString()) + " " + door.getNameString() + spacer + door.getLabelString() +
+        std::string header = std::string(door.getConstructionString()) + " " + std::string(door.getTypeString()) + " " + door.getNameString() + spacer + door.getLabelString() + spacer + door.getGrainOrientationString() + 
             "\n" + door.getMaterialString() + spacer + door.getQuantityString();
         if (door.hasBoneDetail())
             header += spacer + door.getBoneDetailString(denom);
@@ -408,16 +576,20 @@ void DoorList::WriteHTMLReport(const char* jobname) const
 		if (door.getConstruction() == Construction::Shaker)
 			style = Html::Svg::DoorStyle::Shaker;
 		if (door.getConstruction() == Construction::SmallShaker)
-			style = Html::Svg::DoorStyle::Shaker;
+			style = Html::Svg::DoorStyle::ShakerMitered;
 
         diagram
-            .SetSize(100, 100)             // CSS size
+            .SetSize(50, 50)             // CSS size
             .SetViewBox(0, 0, door.getFinishedWidth(), door.getFinishedHeight())     // logical drawing space
             .SetDoorStyle(style)
-            .SetRailWidth(2.5)
-            .SetStileWidth(2.5)
+            .SetLeftStileWidth(door.GetShakerPartWidth(ShakerPart::LEFT_STILE))
+            .SetRightStileWidth(door.GetShakerPartWidth(ShakerPart::RIGHT_STILE))
+            .SetTopRailWidth(door.GetShakerPartWidth(ShakerPart::TOP_RAIL))
+            .SetBottomRailWidth(door.GetShakerPartWidth(ShakerPart::BOTTOM_RAIL))
+            .SetMidWidth(door.GetShakerPartWidth(ShakerPart::MID_RAIL))
             .SetMidRail(false)
-            .SetStrokeWidth(0.1);
+            .SetStrokeWidth(0.1)
+            .SetLabel(door.getsvgLabel());
 
         doc.AddRawHtml(diagram.ToHtml()); // or Slab / Mitered
         doc.AddRawHtml("</div>");
@@ -427,6 +599,35 @@ void DoorList::WriteHTMLReport(const char* jobname) const
 
     
     doc.EndGrid();
+
+    doc.AddRawHtml(R"( 
+</td></tr>
+</tbody>
+
+<tfoot>
+<tr><td>
+    <div class="footer-space"></div>
+</td></tr>
+</tfoot>
+
+</table>
+)");
+
+    auto now = std::chrono::system_clock::now();
+    std::time_t t = std::chrono::system_clock::to_time_t(now);
+
+    std::tm tm{};
+    localtime_s(&tm, &t);   // <-- safe MSVC version
+
+    std::ostringstream hdr;
+    hdr << "<div class='page-header'>Job: "
+        << jobname
+        << " &nbsp;&nbsp; | &nbsp;&nbsp; Date: "
+        << std::put_time(&tm, "%Y-%m-%d")
+        << "</div>";
+
+    doc.AddRawHtml(hdr.str());
+
 
     doc.WriteToFile(file);
 }
@@ -484,4 +685,39 @@ void DoorList::Print()
 {
     for (const auto& door : m_doors)
         door.Print();
+}
+
+void DoorList::makeUniqueLabels()
+{
+    std::unordered_map<std::string, int> totalCount;
+
+    // ---- PASS 1: count frequencies ----
+    for (auto& d : m_doors)
+        ++totalCount[d.getlabelPtr()];
+
+    std::unordered_map<std::string, int> seen;
+
+    // ---- PASS 2: assign suffixes if needed ----
+    for (auto& d : m_doors)
+    {
+        std::string base = d.getlabelPtr();
+
+        if (totalCount[base] > 1)
+        {
+            int idx = seen[base]++;
+
+            // convert idx -> A,B,C,... AA,AB...
+            int n = idx;
+            std::string suffix;
+
+            do
+            {
+                suffix.insert(suffix.begin(), char('A' + (n % 26)));
+                n = n / 26 - 1;
+            } while (n >= 0);
+
+            std::snprintf(d.getlabelPtr(), MAXTEXTSIZE, "%s%s",
+                base.c_str(), suffix.c_str());
+        }
+    }
 }

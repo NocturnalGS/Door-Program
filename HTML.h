@@ -1,11 +1,13 @@
 ﻿#pragma once
-
 #include <string>
 #include <vector>
 #include <fstream>
 #include <sstream>
 #include <iomanip>
 #include <regex>
+#include <algorithm>
+#undef min
+
 
 class Fraction
 {
@@ -272,30 +274,30 @@ namespace Html
                     font-size: 10px;
                 }
                 h1, h2, h3 {
-                    margin: 2px 0;
+                    margin: 1px 0;
                 }
                 table {
                     border-collapse: collapse;
                     width: 100%;
-                    margin-bottom: 6px;
+                    margin-bottom: 0px;
                 }
                 th, td {
                     border: 1px solid #000;
-                    padding: 2px 4px;
+                    padding: 0px 0px;
                     vertical-align: top;
                 }
-                th {
-                    background: #ffffff;
-                }
+                //th {
+                //    background: #ffffff;
+                //}
                 @media print {
                     body {
-                        margin: 0.25in;
+                        margin: 0.0in;
                     }
                 }
                 @page {
                     background-color: #f3f3f3;
                     size: Letter;
-                    margin: 0.25in;
+                    margin: 0.0in;
                 }
                 
                 /* SCREEN PREVIEW */
@@ -458,8 +460,10 @@ namespace Html::Svg
             : m_width(120), m_height(180),
             m_vbW(100), m_vbH(160),
             m_style(DoorStyle::Slab),
-            m_rail(12), m_stile(12),
-            m_midRail(false),
+            m_TopRail(12), m_BottomRail(12),
+            m_LeftStile(12), m_RightStile(12),
+            m_MidWidth(12), 
+            m_bHasMidRail(false),
             m_stroke(1.5)
         {}
 
@@ -483,27 +487,51 @@ namespace Html::Svg
             return *this;
         }
 
-        DoorDiagram& SetRailWidth(double w)
+        DoorDiagram& SetTopRailWidth(double w)
         {
-            m_rail = w;
+            m_TopRail = w;
             return *this;
         }
 
-        DoorDiagram& SetStileWidth(double w)
+        DoorDiagram& SetBottomRailWidth(double w)
         {
-            m_stile = w;
+            m_BottomRail = w;
+            return *this;
+        }
+
+        DoorDiagram& SetLeftStileWidth(double w)
+        {
+            m_LeftStile = w;
+            return *this;
+        }
+
+        DoorDiagram& SetRightStileWidth(double w)
+        {
+            m_RightStile = w;
+            return *this;
+        }
+
+        DoorDiagram& SetMidWidth(double w)
+        {
+            m_MidWidth = w;
             return *this;
         }
 
         DoorDiagram& SetMidRail(bool enable)
         {
-            m_midRail = enable;
+            m_bHasMidRail = enable;
             return *this;
         }
 
         DoorDiagram& SetStrokeWidth(double w)
         {
             m_stroke = w;
+            return *this;
+        }
+
+        DoorDiagram& SetLabel(const std::string& text)
+        {
+            m_label = text;
             return *this;
         }
 
@@ -524,6 +552,8 @@ namespace Html::Svg
             if (m_style != DoorStyle::Slab)
                 DrawFrame(svg);
 
+            DrawLabel(svg);
+
             svg << "</svg>";
 
             return svg.str();
@@ -533,55 +563,118 @@ namespace Html::Svg
         int m_width, m_height;
         double m_vbX = 0, m_vbY = 0, m_vbW, m_vbH;
         DoorStyle m_style;
-        double m_rail, m_stile;
-        bool m_midRail;
+        double m_TopRail;
+        double m_BottomRail;
+        double m_LeftStile;
+        double m_RightStile;
+        double m_MidWidth;
+        bool m_bHasMidRail;
         double m_stroke;
+        std::string m_label;
+        double m_Scale_Factor = 0.9;
 
         void DrawOuter(std::ostringstream& svg) const
         {
-            svg << "<rect x='2' y='2' width='"
-                << (m_vbW - 4) << "' height='"
-                << (m_vbH - 4)
-                << "' fill='none' stroke='black' "
-                << "stroke-width='" << m_stroke << "'/>\n";
+            double w = m_vbW;
+            double h = m_vbH;
+            svg << Rect(0,0,w,h);
         }
 
         void DrawFrame(std::ostringstream& svg) const
         {
             double w = m_vbW;
             double h = m_vbH;
+            if (m_style == DoorStyle::Shaker)
+            {
+                // Stiles
+                svg << Rect(0, 0, m_LeftStile, h);
+                svg << Rect(w - m_RightStile , 0, m_RightStile, h);
 
-            // Stiles
-            svg << Rect(2, 2, m_stile, h - 4);
-            svg << Rect(w - m_stile - 2, 2, m_stile, h - 4);
+                // Rails
+                svg << Rect(m_LeftStile, 0, w - (m_LeftStile + m_RightStile) , m_TopRail);
+                svg << Rect(m_LeftStile, h-m_BottomRail, w - (m_LeftStile + m_RightStile), m_BottomRail);
 
-            // Rails
-            svg << Rect(m_stile + 2, 2, w - 2 * m_stile - 4, m_rail);
-            svg << Rect(m_stile + 2, h - m_rail - 2, w - 2 * m_stile - 4, m_rail);
+                //if (m_midRail)
+                //    svg << Rect(m_stile + 2, h / 2 - m_rail / 2,
+                //        w - 2 * m_stile - 4, m_rail);
 
-            if (m_midRail)
-                svg << Rect(m_stile + 2, h / 2 - m_rail / 2,
-                    w - 2 * m_stile - 4, m_rail);
+            }
+
 
             if (m_style == DoorStyle::ShakerMitered)
-                DrawMiterHints(svg);
+                DrawMiterSmallShaker(svg);
+        }
+        double scaleX(double x) const
+        {
+            double cx = m_vbX + m_vbW / 2.0;
+            return cx + (x - cx) * m_Scale_Factor;
         }
 
-        void DrawMiterHints(std::ostringstream& svg) const
+        double scaleY(double y) const
         {
-            svg << "<line x1='2' y1='2' x2='14' y2='14' stroke='black'/>\n";
-            svg << "<line x1='" << (m_vbW - 2) << "' y1='2' "
-                << "x2='" << (m_vbW - 14) << "' y2='14' stroke='black'/>\n";
+            double cy = m_vbY + m_vbH / 2.0;
+            return cy + (y - cy) * m_Scale_Factor;
+        }
+
+        void DrawMiterSmallShaker(std::ostringstream& svg) const
+        {
+            double w = m_vbW;
+            double h = m_vbH;
+            svg << Line(0, 0, m_LeftStile, m_TopRail);
+            svg << Line(w - m_RightStile, m_TopRail, w, 0);
+            svg << Line(0, h, m_LeftStile, h - m_BottomRail);
+            svg << Line(w - m_RightStile, h - m_BottomRail, w, h);
+            svg << Rect(m_LeftStile, m_TopRail, w - (m_LeftStile + m_RightStile), h - (m_TopRail + m_BottomRail));
         }
 
         std::string Rect(double x, double y, double w, double h) const
         {
+            x = scaleX(x);
+            y = scaleY(y);
+            w = w * m_Scale_Factor;
+            h = h * m_Scale_Factor;
             std::ostringstream r;
             r << "<rect x='" << x << "' y='" << y
                 << "' width='" << w << "' height='" << h
                 << "' fill='none' stroke='black' "
                 << "stroke-width='" << m_stroke << "'/>\n";
             return r.str();
+        }
+        std::string Line(double x1, double y1, double x2, double y2) const
+        {
+            x1 = scaleX(x1);
+            x2 = scaleX(x2);
+            y1 = scaleY(y1);
+            y2 = scaleY(y2);
+            std::ostringstream r;
+            r << "<line x1='" << x1 << "' y1='" << y1 << " ' x2 ='" << x2 << "' y2 ='" << y2 
+                << "' fill='none' stroke='black' "
+                << "stroke-width='" << m_stroke << "'/>\n";
+            return r.str();
+        }
+
+        void DrawLabel(std::ostringstream& svg) const
+        {
+            double cx = m_vbX + m_vbW / 2.0;
+            double cy = m_vbY + m_vbH / 2.0;
+
+            // How much the SVG is being scaled on screen
+            double scaleX = static_cast<double>(m_width) / m_vbW;
+            double scaleY = static_cast<double>(m_height) / m_vbH;
+            double scale = std::min(scaleX, scaleY);
+
+            double desiredPx = 10.0;
+            double fontUnits = desiredPx / scale;   // convert px → SVG units
+
+            svg
+                << "<text x='" << cx
+                << "' y='" << cy
+                << "' text-anchor='middle'"
+                << " dominant-baseline='middle'"
+                << " font-size='" << fontUnits << "'"
+                << " fill='black'>"
+                << m_label
+                << "</text>\n";
         }
     };
 }

@@ -97,6 +97,27 @@ struct ShakerParts
 			return 0.0;
 		}
 	}
+	std::string GetPartString(ShakerPart part) const
+	{
+		std::string name = "";
+		switch (part)
+		{
+		case ShakerPart::TOP_RAIL:
+			return name += "Top Rail";
+		case ShakerPart::BOTTOM_RAIL:
+			return name += "Bottom Rail";
+		case ShakerPart::LEFT_STILE:
+			return name += "Left Stile";
+		case ShakerPart::RIGHT_STILE:
+			return name += "Right Stile";
+		case ShakerPart::MID_RAIL:
+			return name += "Mid Rail";
+		case ShakerPart::MID_STILE:
+			return name += "Mid Stile";
+		default:
+			return "undefined part";
+		}
+	}
 	double GetCutLength(Construction construction, ShakerPart part, double doorWidth, double doorHeight) const
 	{
 		if (construction == Construction::Shaker)
@@ -229,12 +250,15 @@ class Door
 	void PrintPart(ShakerPart part) const;
 	void PrintConstruction() const;
 
-
 public:
-	bool Validate(double& outWidth, double& outHeight) const;
+	char* getlabelPtr() { return label; }
+	std::string getsvgLabel() const { return label; }
+	bool ValidatePanel(double& outWidth, double& outHeight) const;
+	bool ValidateShakerParts(std::string& error) const;
 	std::string getNotes() const { return "SPECIAL NOTES: " + std::string(notes); }
 	bool hasNotes() const { return std::string(notes).length() > 0; }
 	unsigned int getQuantity() const { return quantity; }
+	double GetShakerPartWidth(ShakerPart part) const { return dimensions.shakerparts.width[static_cast<int>(part)]; }
 	bool hasMidRail() const { return dimensions.shakerparts.mid_rail_count > 0; }
 	bool hasMidStile() const { return dimensions.shakerparts.mid_stile_count > 0; }
 	bool hasBoneDetail() const { return dimensions.bonedetail != 0.0; }
@@ -407,7 +431,13 @@ public:
 		else 
 			return "Mid Stile N/A"; 
 	}
-
+	std::string getGrainOrientationString() const
+	{
+		if (dimensions.panel.orientation == Orientation::VERTICAL)
+			return "Grain Orientation: Vertical";
+		else
+			return "Grain Orientation: Horizontal";
+	}
 	std::string getLeftStileLengthString(int denom) const
 	{ 
 		Fraction lengthfrac(dimensions.shakerparts.GetCutLength(construction, ShakerPart::LEFT_STILE, dimensions.GetOversizedWidth(), dimensions.GetOversizedHeight()), denom);
@@ -511,12 +541,14 @@ class DoorList
 {
 	std::vector<Door> m_doors;
 	void ReadCsvTable(CsvTable doorsTable);
+	void makeUniqueLabels();
 public:
 	DoorList(CsvTable doorsTable);
 	void WriteHTMLReport(const char* folder) const;
 	void WriteTigerStopCsvs(const char* folder) const;
 	void Print();
 	double GetTotalPerimeter() const
+	
 	{
 		double perimeter = 0.0;
 		for (const auto& door : m_doors)
