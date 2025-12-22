@@ -1,4 +1,5 @@
 #include "Door.h"
+#include "HTML.h"
 
 bool Door::Create(const CsvRow& row, size_t row_index, std::vector<CsvError>& errors)
 {
@@ -12,6 +13,7 @@ bool Door::Create(const CsvRow& row, size_t row_index, std::vector<CsvError>& er
     CopyCsvText(row, "Name", name, MAXTEXTSIZE);
     CopyCsvText(row, "Cab#", label, MAXTEXTSIZE);
     CopyCsvText(row, "Notes", notes, MAXTEXTSIZE);
+    CopyCsvText(row, "Material", material, MAXTEXTSIZE);
 
     if (!ReadUInt(row, "Count", quantity) || quantity == 0)
         return fatal(name, label, "Invalid or missing Count");
@@ -32,6 +34,7 @@ bool Door::Create(const CsvRow& row, size_t row_index, std::vector<CsvError>& er
     ReadDouble(row, "WidthOversize", dimensions.oversizeWidth);
     ReadDouble(row, "HeightOversize", dimensions.oversizeHeight);
     ReadDouble(row, "Rabbet", dimensions.shakerparts.rabbet);
+    ReadDouble(row, "Bone Detail", dimensions.bonedetail);
 
     ReadDouble(row, "Bottom Rail Width", dimensions.shakerparts.width[static_cast<int>(ShakerPart::BOTTOM_RAIL)]);
     ReadDouble(row, "Top Rail Width", dimensions.shakerparts.width[static_cast<int>(ShakerPart::TOP_RAIL)]);
@@ -49,6 +52,19 @@ bool Door::Create(const CsvRow& row, size_t row_index, std::vector<CsvError>& er
     ReadOrientation(row, dimensions.panel.orientation);
     ReadPanel(row, dimensions.panel.hasPanel);
 
+    return true;
+}
+
+bool Door::Validate(double& outWidth, double& outHeight) const
+{
+	const double minPanelSize = 1.0;
+	outWidth = dimensions.panel.GetInnerPanelWidth(construction, dimensions.shakerparts, dimensions.GetOversizedWidth(), dimensions.GetOversizedHeight());
+	outHeight = dimensions.panel.GetInnerPanelHeight(construction, dimensions.shakerparts, dimensions.GetOversizedWidth(), dimensions.GetOversizedHeight());
+	if (construction == Construction::Shaker || construction == Construction::SmallShaker)
+    {
+        if (outWidth < minPanelSize || outHeight < minPanelSize)
+            return false;
+    }
     return true;
 }
 
@@ -99,6 +115,7 @@ void Door::Print() const
     PrintConstruction();
     std::cout << " Name: " << name << "\n";
     std::cout << " Cab#: " << label << "\n";
+    std::cout << " Material: " << material << "\n";
     std::cout << " Notes: " << notes << "\n";
     std::cout << " Count: " << quantity << "\n";
     std::cout << " Finished Width: " << dimensions.finishedWidth << " ";
@@ -113,9 +130,9 @@ void Door::Print() const
         PrintPart(ShakerPart::MID_RAIL);
     if (dimensions.shakerparts.mid_stile_count > 0)
         PrintPart(ShakerPart::MID_STILE);
-    std::cout << " Panel Width " << dimensions.panel.GetPanelWidth(dimensions.shakerparts, dimensions.GetOversizedWidth(), dimensions.GetOversizedHeight()) << "\n";
-    std::cout << " Panel Height " << dimensions.panel.GetPanelHeight(dimensions.shakerparts, dimensions.GetOversizedWidth(), dimensions.GetOversizedHeight()) << "\n";
-    std::cout << " Panel Count " << dimensions.panel.GetPanelCount(dimensions.shakerparts) << "\n";
+    std::cout << " Panel Width " << dimensions.panel.GetPanelWidthWithRabbet(construction, dimensions.shakerparts, dimensions.GetOversizedWidth(), dimensions.GetOversizedHeight()) << "\n";
+    std::cout << " Panel Height " << dimensions.panel.GetPanelHeightWithRabbet(construction, dimensions.shakerparts, dimensions.GetOversizedWidth(), dimensions.GetOversizedHeight()) << "\n";
+    std::cout << " Panel Count " << dimensions.panel.GetPanelCount(construction, dimensions.shakerparts) << "\n";
     std::cout << std::endl;
 }
 
@@ -181,32 +198,7 @@ void Door::AppendTigerStopCuts(std::vector<TigerStopItem>& cutlist) const
         add(ShakerPart::MID_RAIL, quantity * parts.mid_rail_count);
         add(ShakerPart::MID_STILE, quantity * parts.mid_stile_count);
     }
-    //if (getConstruction() == Construction::SmallShaker)
-    //{
-    //    add(TOP_RAIL, quantity);
-    //    add(BOTTOM_RAIL, quantity);
-    //    add(LEFT_STILE, quantity);
-    //    add(RIGHT_STILE, quantity);
-    //    add(MID_RAIL, quantity * parts.mid_rail_count);
-    //    add(MID_STILE, quantity * parts.mid_stile_count);
-    //}
-
 }
-
-//void DoorList::AggregateTigerCuts()
-//{
-//    for (const auto& door : m_doors)
-//    {
-//        if (door.getConstruction() == Construction::Shaker)
-//            door.AppendTigerStopCuts(m_shakerTigerCuts);
-//        if (door.getConstruction() == Construction::SmallShaker)
-//            door.AppendTigerStopCuts(m_smallShakerTigerCuts);
-//    }
-//}
-
-
-
-
 
 void DoorList::ReadCsvTable(CsvTable doorsTable)
 {
@@ -221,23 +213,30 @@ void DoorList::ReadCsvTable(CsvTable doorsTable)
             skippedCount++;
 
     }
-    //for (const auto& door : m_doors)
-    //    door.Print();
     std::cout << "Skipped " << skippedCount << " doors\n";
     for (const auto& e : errors)
     {
-        std::cout << "Row " << e.row_index << " skipped: " << e.message << "\n";
+        std::cout << "CSV Row " << e.row_index << " skipped: " << e.message << "\n";
     }
+    std::cout << "\n";
+    std::erase_if(m_doors, [] (const Door& door) {
+        double panelWidth = 0.0;
+        double panelHeight = 0.0;
+
+        bool isValid = door.Validate(panelWidth, panelHeight);
+
+        if (!isValid)
+        {
+            std::cout << "Warning: Removed Door "
+                << door.getNameString() << " " << door.getLabelString()
+                << " Below minimum panel size. "
+                << panelWidth << " x " << panelHeight << "\n";
+        }
+
+        return !isValid;
+        });
 
     std::cout << "\nProcessed " << m_doors.size() << " valid door(s)\n";
-
-    //Temp add total door perimeter
-    double perimeter = 0;
-    for (const auto& door : m_doors)
-    {
-        perimeter += door.GetPerimeter();
-    }
-    std::cout << "Total Perimeter: " << perimeter << "\n";
 }
 
 bool SortByGroupThenWidthThenLength(const TigerStopItem& a, const TigerStopItem& b)
@@ -247,6 +246,189 @@ bool SortByGroupThenWidthThenLength(const TigerStopItem& a, const TigerStopItem&
     if (a.nominal_width != b.nominal_width)
         return a.nominal_width < b.nominal_width;
     return a.length < b.length;
+}
+
+void DoorList::WriteHTMLReport(const char* jobname) const
+{
+    constexpr int denom = 32;
+	std::string title = std::string(jobname) + " Door Report";
+    std::string file = std::string(jobname) + " Door Report.html";
+    Html::HtmlDocument doc(title);
+
+    doc.AddStyle(R"(
+
+    .door-row {
+        display: flex;
+        width: 100%;
+        gap: 6px;
+        align-items: stretch;   /* key: same height */
+        margin-bottom: 6px;
+    }
+    
+    .door-data {
+        flex: 0 0 75%;
+    }
+    
+    .door-drawing {
+        flex: 0 0 25%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .door-drawing svg {
+        width: 80%;
+        height: auto;
+        max-height: 80%;
+    }
+
+
+
+    .door-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 4px;
+    }
+    .door-block {
+        border: 1px solid #000;
+        background-color: #ffffff;
+        margin-bottom: 4px;
+        padding: 1px;
+        border-radius: 6px;
+    }
+    td {
+        white-space: pre;  /* preserves spaces and tabs inside table cells */
+    }
+    h1, h2, h3, h4, h5, h6 {
+        white-space: pre; /* preserve spaces and tabs */
+    }
+    )");
+
+    doc.BeginGrid("door-grid");
+
+    for (const auto& door : m_doors)
+    {
+        doc.AddRawHtml("<div class='door-block'>");
+        doc.AddRawHtml("<div class='door-row'>");
+        doc.AddRawHtml("<div class='door-data'>");
+
+
+        unsigned int quantity = door.getQuantity();
+        std::string spacer = "  |  ";
+
+        std::string header = std::string(door.getConstructionString()) + " " + std::string(door.getTypeString()) + " " + door.getNameString() + spacer + door.getLabelString() +
+            "\n" + door.getMaterialString() + spacer + door.getQuantityString();
+        if (door.hasBoneDetail())
+            header += spacer + door.getBoneDetailString(denom);
+        if (door.hasNotes())
+			header += spacer + std::string(door.getNotes());
+        doc.AddHeading(header, 3);
+
+
+        std::string finishedwidth = door.getFinishedWidthString(denom);
+        std::string cutwidth = door.getCutWidthString(denom) + "\n" + door.getOversizeWidthString(denom);
+		std::string finishedheight = door.getFinishedHeightString(denom);
+		std::string cutheight = door.getCutHeightString(denom) + "\n" + door.getOversizeHeightString(denom);
+		std::string panelwidth = door.getPanelWidthString(denom);
+		std::string panelheight = door.getPanelHeightString(denom);
+        Html::HtmlTable maintable;
+
+        if (door.hasPanel())
+        {
+            maintable.AddColumn({ "", "33%" });
+            maintable.AddColumn({ "", "33%" });
+            maintable.AddColumn({ "", "33%" });
+
+            maintable.AddRow({ finishedwidth, cutwidth, panelwidth });
+		    maintable.AddRow({ finishedheight, cutheight, panelheight });
+        }
+        else
+        {
+            maintable.AddColumn({ "", "50%" });
+            maintable.AddColumn({ "", "50%" });
+
+            maintable.AddRow({ finishedwidth, cutwidth });
+            maintable.AddRow({ finishedheight, cutheight });
+        }
+
+        Html::HtmlTable shakerTable;
+		shakerTable.AddColumn({ door.getLeftStileWidthString(denom), "16.6%" });
+        shakerTable.AddColumn({ door.getRightStileWidthString(denom), "16.6%" });
+        shakerTable.AddColumn({ door.getTopRailWidthString(denom), "16.6%" });
+        shakerTable.AddColumn({ door.getBottomRailWidthString(denom), "16.6%" });
+		if (door.hasMidRail())
+            shakerTable.AddColumn({ door.getMidRailWidthString(denom), "16.6%" });
+		if (door.hasMidStile())
+            shakerTable.AddColumn({ door.getMidStileWidthString(denom), "16.6%" });
+
+        if (door.hasMidRail() && door.hasMidStile())
+        {
+            shakerTable.AddRow({ door.getLeftStileLengthString(denom),
+                door.getRightStileLengthString(denom),
+                door.getTopRailLengthString(denom),
+                door.getBottomRailLengthString(denom),
+                door.getMidRailLengthString(denom),
+                door.getMidStileLengthString(denom) });
+        }
+        else if (door.hasMidRail() && !door.hasMidStile())
+        {
+            shakerTable.AddRow({ door.getLeftStileLengthString(denom),
+                door.getRightStileLengthString(denom),
+                door.getTopRailLengthString(denom),
+                door.getBottomRailLengthString(denom),
+                door.getMidRailLengthString(denom) });
+        }
+        else if (!door.hasMidRail() && door.hasMidStile())
+        {
+            shakerTable.AddRow({ door.getLeftStileLengthString(denom),
+                door.getRightStileLengthString(denom),
+                door.getTopRailLengthString(denom),
+                door.getBottomRailLengthString(denom),
+                door.getMidStileLengthString(denom) });
+        }
+        else
+        {
+            shakerTable.AddRow({ door.getLeftStileLengthString(denom),
+                door.getRightStileLengthString(denom),
+                door.getTopRailLengthString(denom),
+                door.getBottomRailLengthString(denom) });
+        }
+        
+        doc.AddTable(maintable);
+        if (door.getConstruction() == Construction::Shaker || door.getConstruction() == Construction::SmallShaker)
+        {
+		    doc.AddTable(shakerTable);
+        }
+        doc.AddRawHtml("</div>");
+
+        doc.AddRawHtml("<div class='door-drawing'>");
+        Html::Svg::DoorDiagram diagram;
+
+		Html::Svg::DoorStyle style = Html::Svg::DoorStyle::Slab;
+		if (door.getConstruction() == Construction::Shaker)
+			style = Html::Svg::DoorStyle::Shaker;
+		if (door.getConstruction() == Construction::SmallShaker)
+			style = Html::Svg::DoorStyle::Shaker;
+
+        diagram
+            .SetSize(100, 100)             // CSS size
+            .SetViewBox(0, 0, door.getFinishedWidth(), door.getFinishedHeight())     // logical drawing space
+            .SetDoorStyle(style)
+            .SetRailWidth(2.5)
+            .SetStileWidth(2.5)
+            .SetMidRail(false)
+            .SetStrokeWidth(0.1);
+
+        doc.AddRawHtml(diagram.ToHtml()); // or Slab / Mitered
+        doc.AddRawHtml("</div>");
+        doc.AddRawHtml("</div>");
+        doc.AddRawHtml("</div>");
+    }
+
+    
+    doc.EndGrid();
+
+    doc.WriteToFile(file);
 }
 
 void DoorList::WriteTigerStopCsvs(const char* folder) const

@@ -29,5 +29,8 @@
     <ClInclude Include="CsvUtils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="HTML.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

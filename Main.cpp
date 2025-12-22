@@ -2,8 +2,11 @@
 #include "Windows.h"
 #include "Door.h"
 #include "CsvUtils.h"
+#include "HTML.h"
 
 void WriteExample();
+//void GenerateDoorSheet();
+
 int main()
 {
     char cwd[MAX_PATH];
@@ -20,13 +23,23 @@ int main()
 
     CsvTable doortable = CsvReader::Read(csvPath);
     DoorList doorlist(doortable);
-    doorlist.Print();
+    doorlist.WriteHTMLReport(jobName.c_str());
+
+	double perimeter = doorlist.GetTotalPerimeter();
+    std::cout << "Total Perimeter: " << perimeter << "\n";
 
     doorlist.WriteTigerStopCsvs(cwd);
-
+    //add bone detail to report
+    //add panel size to report
+    //add csv lists
 
     std::string filename = MakeTigerStopFilename(StockGroup::Rail, 2.5, jobName);
     std::cout << filename << "\n";
+
+
+
+
+    //GenerateDoorSheet();
 
     return 0;
 }
@@ -69,3 +82,4 @@ void WriteExample()
         .Field(91.25)
         .End();
 }
+

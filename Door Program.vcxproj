@@ -133,6 +133,7 @@
   <ItemGroup>
     <ClInclude Include="CsvUtils.h" />
     <ClInclude Include="Door.h" />
+    <ClInclude Include="HTML.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
