@@ -246,9 +246,6 @@ class Door
 	unsigned int quantity = 0;
 	Construction construction = {};
 	FaceType type = {};
-	void PrintType() const;
-	void PrintPart(ShakerPart part) const;
-	void PrintConstruction() const;
 
 public:
 	char* getlabelPtr() { return label; }
@@ -308,7 +305,7 @@ public:
 		std::string panelheightstr = "Panel Height: " + panelheightfrac.GetDecimalString();
 		return panelheightstr;
 	}
-	const char* getConstructionString() const
+	std::string getConstructionString() const
 	{
 		switch (construction)
 		{
@@ -322,7 +319,7 @@ public:
 			return "Undefined";
 		}
 	}
-	const char* getTypeString() const
+	std::string getTypeString() const
 	{
 		switch (type)
 		{
@@ -484,6 +481,18 @@ public:
 		else 
 			return "Length: N/A"; 
 	}
+	int getMidStilecount() const
+	{
+		return dimensions.shakerparts.mid_stile_count;
+	}
+	int getMidRailcount() const
+	{
+		return dimensions.shakerparts.mid_rail_count;
+	}
+	int getPanelcount() const
+	{
+		return dimensions.panel.GetPanelCount(construction, dimensions.shakerparts);
+	}
 
 	Construction getConstruction() const { return construction; }
 	bool Create(const CsvRow& row, size_t row_index, std::vector<CsvError>& errors);
@@ -545,7 +554,8 @@ class DoorList
 public:
 	DoorList(CsvTable doorsTable);
 	void WriteHTMLReport(const char* folder) const;
-	void WriteTigerStopCsvs(const char* folder) const;
+	void WriteTigerStopCsvs(std::string& folder, std::string& jobname) const;
+	void WriteShakerPanelCsv(std::string& folder, std::string& jobname) const;
 	void Print();
 	double GetTotalPerimeter() const
 	
@@ -585,7 +595,7 @@ inline StockGroup GetStockGroup(ShakerPart part)
 inline std::string FormatTrimmed(double value)
 {
 	// 1. Round to 2 decimal places
-	std::string s = std::format("{:.2f}", value);
+	std::string s = std::format("{:.4f}", value);
 
 	// 2. Remove trailing zeros
 	if (s.find('.') != std::string::npos)

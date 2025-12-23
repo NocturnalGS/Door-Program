@@ -408,3 +408,42 @@ inline void WriteField(std::ostream& os, const char* s)
     }
     os << '"';
 }
+
+inline void WriteExample()
+{
+
+    std::filesystem::path dir = "testfolder";
+
+    // Create folder if it doesn't exist
+    std::filesystem::create_directories(dir);
+
+    std::ofstream file(dir / "example.csv");
+    if (!file.is_open())
+        return;
+
+    // Header row
+    Row(file)
+        .Field("Name")
+        .Field("Age")
+        .Field("Score")
+        .End();
+
+    // Data rows
+    Row(file)
+        .Field("Alice")
+        .Field(30)
+        .Field(95.5)
+        .End();
+
+    Row(file)
+        .Field("Bob, Jr.")   // comma → auto quoted
+        .Field(42)
+        .Field(88.0)
+        .End();
+
+    Row(file)
+        .Field("Charlie \"The Champ\"") // quotes → escaped
+        .Field(27)
+        .Field(91.25)
+        .End();
+}

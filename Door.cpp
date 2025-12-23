@@ -4,6 +4,11 @@
 #include <iomanip>
 #include <sstream>
 #include <ctime>
+#include <vector>
+#include <map>
+#include <fstream>
+#include <tuple>
+#include <string>
 
 
 bool Door::Create(const CsvRow& row, size_t row_index, std::vector<CsvError>& errors)
@@ -125,103 +130,30 @@ bool Door::ValidateShakerParts(std::string& error) const
     return true;
 }
 
-void Door::PrintPart(ShakerPart part) const
-{
-    double door_width = dimensions.GetOversizedWidth();
-    double door_height = dimensions.GetOversizedHeight();
-    double width = 0.0;
-    double length = 0.0;
-    switch (part)
-    {
-    case ShakerPart::TOP_RAIL:
-        width = dimensions.shakerparts.GetPartWidth(ShakerPart::TOP_RAIL);
-        length = dimensions.shakerparts.GetCutLength(construction, ShakerPart::TOP_RAIL, door_width, door_height);
-        std::cout << " Top Rail Width: " << width << " Length: " << length << "\n";
-        break;
-    case ShakerPart::BOTTOM_RAIL:
-        width = dimensions.shakerparts.GetPartWidth(ShakerPart::BOTTOM_RAIL);
-        length = dimensions.shakerparts.GetCutLength(construction, ShakerPart::BOTTOM_RAIL, door_width, door_height);
-        std::cout << " Bottom Rail Width: " << width << " Length: " << length << "\n";
-        break;
-    case ShakerPart::MID_RAIL:
-        width = dimensions.shakerparts.GetPartWidth(ShakerPart::MID_RAIL);
-        length = dimensions.shakerparts.GetCutLength(construction, ShakerPart::MID_RAIL, door_width, door_height);
-        std::cout << " Mid Rail Width: " << width << " Length: " << length << "\n";
-        break;
-    case ShakerPart::LEFT_STILE:
-        width = dimensions.shakerparts.GetPartWidth(ShakerPart::LEFT_STILE);
-        length = dimensions.shakerparts.GetCutLength(construction, ShakerPart::LEFT_STILE, door_width, door_height);
-        std::cout << " Left Stile Width: " << width << " Length: " << length << "\n";
-        break;
-    case ShakerPart::RIGHT_STILE:
-        width = dimensions.shakerparts.GetPartWidth(ShakerPart::RIGHT_STILE);
-        length = dimensions.shakerparts.GetCutLength(construction, ShakerPart::RIGHT_STILE, door_width, door_height);
-        std::cout << " Right Stile Width: " << width << " Length: " << length << "\n";
-        break;
-    case ShakerPart::MID_STILE:
-        width = dimensions.shakerparts.GetPartWidth(ShakerPart::MID_STILE);
-        length = dimensions.shakerparts.GetCutLength(construction, ShakerPart::MID_STILE, door_width, door_height);
-        std::cout << " Mid Stile Width: " << width << " Length: " << length << "\n";
-        break;
-    }
-}
-
 void Door::Print() const
 {
-    PrintType();
-    PrintConstruction();
-    std::cout << " Name: " << name << "\n";
-    std::cout << " Cab#: " << label << "\n";
-    std::cout << " Material: " << material << "\n";
-    std::cout << " Notes: " << notes << "\n";
-    std::cout << " Count: " << quantity << "\n";
-    std::cout << " Finished Width: " << dimensions.finishedWidth << " ";
-    std::cout << " Finished Height: " << dimensions.finishedHeight << "\n";
-    std::cout << " Oversize Width: " << dimensions.oversizeWidth << " ";
-    std::cout << " Oversize Height: " << dimensions.oversizeWidth << "\n";
-    PrintPart(ShakerPart::TOP_RAIL);
-    PrintPart(ShakerPart::BOTTOM_RAIL);
-    PrintPart(ShakerPart::LEFT_STILE);
-    PrintPart(ShakerPart::RIGHT_STILE);
-    if (dimensions.shakerparts.mid_rail_count>0)
-        PrintPart(ShakerPart::MID_RAIL);
-    if (dimensions.shakerparts.mid_stile_count > 0)
-        PrintPart(ShakerPart::MID_STILE);
-    std::cout << " Panel Width " << dimensions.panel.GetPanelWidthWithRabbet(construction, dimensions.shakerparts, dimensions.GetOversizedWidth(), dimensions.GetOversizedHeight()) << "\n";
-    std::cout << " Panel Height " << dimensions.panel.GetPanelHeightWithRabbet(construction, dimensions.shakerparts, dimensions.GetOversizedWidth(), dimensions.GetOversizedHeight()) << "\n";
-    std::cout << " Panel Count " << dimensions.panel.GetPanelCount(construction, dimensions.shakerparts) << "\n";
-    std::cout << std::endl;
-}
+    int denom = 32;
+    std::cout << getTypeString() << " \n"
+        << getConstructionString() << " \n"
+        << getNameString() << "\n"
+        << getLabelString() << "\n"
+        << getMaterialString() << "\n"
+        << getNotesString() << "\n"
+        << getQuantityString() << "\n"
+        << getFinishedWidth() << "\n"
+        << getFinishedHeight() << "\n"
+        << getLeftStileWidthString(denom) << " " << getLeftStileLengthString(denom) << "\n"
+        << getRightStileWidthString(denom) << " " << getRightStileLengthString(denom) << "\n"
+        << getTopRailWidthString(denom) << " " << getTopRailLengthString(denom) << "\n"
+        << getBottomRailWidthString(denom) << " " << getBottomRailLengthString(denom) << "\n";
+    if (getMidRailcount() > 0)
+        std::cout << getMidRailWidthString(denom) << " " << getMidRailLengthString(denom) << " Rail count: " << getMidRailcount() << "\n";
+    if (getMidStilecount() > 0)
+        std::cout << getMidRailWidthString(denom) << " " << getMidStileLengthString(denom) << " Stile count: " << getMidStilecount() << "\n";
 
-void Door::PrintType() const
-{
-    switch (type)
-    {
-    case FaceType::Door:
-        std::cout << " Type: Door" << "\n";
-        break;
-    case FaceType::Drawer:
-        std::cout << " Type: Drawer" << "\n";
-        break;
-    case FaceType::Panel:
-        std::cout << " Type: Panel" << "\n";
-        break;
-    }
-}
-void Door::PrintConstruction() const
-{
-    switch (construction)
-    {
-    case Construction::Slab:
-        std::cout << " Construction: Slab" << "\n";
-        break;
-    case Construction::Shaker:
-        std::cout << " Construction: Shaker" << "\n";
-        break;
-    case Construction::SmallShaker:
-        std::cout << " Construction: Small Shaker" << "\n";
-        break;
-    }
+    std::cout << getPanelWidthString(denom) << "\n"
+    << getPanelHeightString(denom) << "\n"
+    << "Panel Count: " << getPanelcount() << "\n" << std::endl;
 }
 
 void Door::AppendTigerStopCuts(std::vector<TigerStopItem>& cutlist) const
@@ -309,14 +241,14 @@ void DoorList::ReadCsvTable(CsvTable doorsTable)
     makeUniqueLabels();
 }
 
-bool SortByGroupThenWidthThenLength(const TigerStopItem& a, const TigerStopItem& b)
-{
-    if (a.group != b.group)
-        return a.group < b.group;
-    if (a.nominal_width != b.nominal_width)
-        return a.nominal_width < b.nominal_width;
-    return a.length < b.length;
-}
+//bool SortByGroupThenWidthThenLength(const TigerStopItem& a, const TigerStopItem& b)
+//{
+//    if (a.group != b.group)
+//        return a.group < b.group;
+//    if (a.nominal_width != b.nominal_width)
+//        return a.nominal_width < b.nominal_width;
+//    return a.length < b.length;
+//}
 
 void DoorList::WriteHTMLReport(const char* jobname) const
 {
@@ -632,7 +564,7 @@ tfoot { display: table-footer-group; }
     doc.WriteToFile(file);
 }
 
-void DoorList::WriteTigerStopCsvs(const char* folder) const
+void DoorList::WriteShakerPanelCsv(std::string& folder, std::string& jobname) const
 {
     std::vector<TigerStopItem> cutlist;
 
@@ -641,19 +573,89 @@ void DoorList::WriteTigerStopCsvs(const char* folder) const
         if (door.getConstruction() == Construction::Shaker || door.getConstruction() == Construction::SmallShaker)
             door.AppendTigerStopCuts(cutlist);
     }
+}
 
-    //for (const auto& door : m_doors)
-    //    door.Print();
-
-
-
-    //consolidate
-    std::sort(cutlist.begin(), cutlist.end(), SortByGroupThenWidthThenLength);
- 
-    for (const auto& cut : cutlist)
+// helper to turn group enum into text
+static std::string GroupToString(StockGroup g)
+{
+    switch (g)
     {
-
+    case StockGroup::Rail: return "Rails";
+    case StockGroup::Stile: return "Stiles";
+    case StockGroup::Small_Shaker_Rail: return "Small Shaker";
     }
+    return "UNKNOWN";
+}
+
+void WriteGroupedCSVs(const std::vector<TigerStopItem>& items,
+    const std::string& folder,
+    const std::string& jobname)
+{
+    //using Inner = std::map<double, unsigned int>; // length -> qty
+    using Inner = std::map<double, unsigned int, std::greater<double>>;
+    using Key = std::pair<StockGroup, double>;  // group + width
+
+    std::map<Key, Inner> grouped;
+
+    for (const auto& it : items)
+    {
+        Key key{ it.group, it.nominal_width };
+        grouped[key][it.length] += it.quantity;
+    }
+
+    std::filesystem::path dir(folder);
+    std::filesystem::create_directories(dir);
+
+    for (auto& [key, lengths] : grouped)
+    {
+        auto [group, width] = key;
+
+        std::ostringstream filename;
+        filename << jobname << " "
+            << GroupToString(group) << " "
+            << FormatTrimmed(width)
+            << ".csv";
+
+        std::ofstream out(dir / filename.str());
+        if (!out)
+            continue;
+
+        out << "length,quantity\n";
+
+        for (auto& [length, qty] : lengths)
+        {
+            out << FormatTrimmed(length) << ","
+                << qty << "\n";
+        }
+    }
+}
+
+
+void DoorList::WriteTigerStopCsvs(std::string& folder, std::string& jobname) const
+{
+    std::vector<TigerStopItem> cutlist;
+
+    for (const auto& door : m_doors)
+    {
+        if (door.getConstruction() == Construction::Shaker || door.getConstruction() == Construction::SmallShaker)
+            door.AppendTigerStopCuts(cutlist);
+    }
+    WriteGroupedCSVs(cutlist, folder, jobname);
+
+
+    std::filesystem::path dir = "testfolder";
+
+    // Create folder if it doesn't exist
+    //std::filesystem::create_directories(dir);
+
+    //std::ofstream file(dir / "example.csv");
+    //if (!file.is_open())
+    //    return;
+
+    //for (const auto& cut : cutlist)
+    //{
+
+    //}
     //for (const auto& c : cuts)
     //{
     //    bool merged = false;

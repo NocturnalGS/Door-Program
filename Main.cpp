@@ -13,73 +13,30 @@ int main()
     GetCurrentDirectoryA(MAX_PATH, cwd);
     std::string jobName = extractparentFolderName(cwd);
     std::cout << jobName << "\n";
-    /*WriteExample();*/
+
     std::string csvPath = CsvFileDialog::Open();
     if (csvPath.empty())
     {
         std::cout << "No file selected\n";
         return 0;
     }
+    std::filesystem::path p(csvPath);
+    // filename without extension
+    std::string filename = p.stem().string();
 
     CsvTable doortable = CsvReader::Read(csvPath);
     DoorList doorlist(doortable);
     doorlist.WriteHTMLReport(jobName.c_str());
 
-	double perimeter = doorlist.GetTotalPerimeter();
-    std::cout << "Total Perimeter: " << perimeter << "\n";
+    // add mid rail and multiple to report drawing
+    // Add panel csv!!
 
-    doorlist.WriteTigerStopCsvs(cwd);
-    //add bone detail to report
-    //add panel size to report
-    //add csv lists
-
-    std::string filename = MakeTigerStopFilename(StockGroup::Rail, 2.5, jobName);
-    std::cout << filename << "\n";
-
-
-
-
-    //GenerateDoorSheet();
+    std::string dir = filename;
+    doorlist.WriteTigerStopCsvs(dir, jobName);
+    doorlist.Print();
 
     return 0;
 }
 
-void WriteExample()
-{
 
-    std::filesystem::path dir = "testfolder";
-
-    // Create folder if it doesn't exist
-    std::filesystem::create_directories(dir);
-
-    std::ofstream file(dir / "example.csv");
-    if (!file.is_open())
-        return;
-
-    // Header row
-    Row(file)
-        .Field("Name")
-        .Field("Age")
-        .Field("Score")
-        .End();
-
-    // Data rows
-    Row(file)
-        .Field("Alice")
-        .Field(30)
-        .Field(95.5)
-        .End();
-
-    Row(file)
-        .Field("Bob, Jr.")   // comma → auto quoted
-        .Field(42)
-        .Field(88.0)
-        .End();
-
-    Row(file)
-        .Field("Charlie \"The Champ\"") // quotes → escaped
-        .Field(27)
-        .Field(91.25)
-        .End();
-}
 
