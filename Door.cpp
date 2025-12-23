@@ -280,7 +280,7 @@ void DoorList::WriteHTMLReport(const char* jobname) const
 
 
 .door-drawing svg {
-    width: 85%;
+    width: 98%;
     height: auto;
     max-height: 1.1in;   /* tune to taste */
     display: block;
@@ -510,7 +510,8 @@ tfoot { display: table-footer-group; }
             .SetTopRailWidth(door.GetShakerPartWidth(ShakerPart::TOP_RAIL))
             .SetBottomRailWidth(door.GetShakerPartWidth(ShakerPart::BOTTOM_RAIL))
             .SetMidWidth(door.GetShakerPartWidth(ShakerPart::MID_RAIL))
-            .SetMidRail(false)
+            .SetMidRail(door.getMidRailcount())
+			.SetMidStile(door.getMidStilecount())
             .SetStrokeWidth(0.1)
             .SetLabel(door.getsvgLabel());
 

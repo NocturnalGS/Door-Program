@@ -463,7 +463,8 @@ namespace Html::Svg
             m_TopRail(12), m_BottomRail(12),
             m_LeftStile(12), m_RightStile(12),
             m_MidWidth(12), 
-            m_bHasMidRail(false),
+            m_midrailCount(0),
+            m_midstileCount(0),
             m_stroke(1.5)
         {}
 
@@ -517,11 +518,17 @@ namespace Html::Svg
             return *this;
         }
 
-        DoorDiagram& SetMidRail(bool enable)
+        DoorDiagram& SetMidRail(int num)
         {
-            m_bHasMidRail = enable;
+            m_midrailCount = num;
             return *this;
         }
+
+        DoorDiagram& SetMidStile(int num)
+        {
+            m_midstileCount = num;
+            return *this;
+		}
 
         DoorDiagram& SetStrokeWidth(double w)
         {
@@ -568,7 +575,8 @@ namespace Html::Svg
         double m_LeftStile;
         double m_RightStile;
         double m_MidWidth;
-        bool m_bHasMidRail;
+        int m_midrailCount;
+		int m_midstileCount;
         double m_stroke;
         std::string m_label;
         double m_Scale_Factor = 0.98;
@@ -593,11 +601,22 @@ namespace Html::Svg
                 // Rails
                 svg << Rect(m_LeftStile, 0, w - (m_LeftStile + m_RightStile) , m_TopRail);
                 svg << Rect(m_LeftStile, h-m_BottomRail, w - (m_LeftStile + m_RightStile), m_BottomRail);
-
-                //if (m_midRail)
-                //    svg << Rect(m_stile + 2, h / 2 - m_rail / 2,
-                //        w - 2 * m_stile - 4, m_rail);
-
+				double panelheight = (h - (m_TopRail + m_BottomRail + m_MidWidth * m_midrailCount)) / (m_midrailCount + 1);
+				double panelwidth = (w - (m_LeftStile + m_RightStile + m_MidWidth * m_midstileCount)) / (m_midstileCount + 1);
+                for (int i = 0; i < m_midrailCount; ++i)
+                {
+                    double railY = m_TopRail + (i+1) * panelheight + (m_MidWidth * i);
+                    svg << Rect(m_LeftStile, railY, w - (m_LeftStile + m_RightStile), m_MidWidth);
+				}
+                for (int ix = 0; ix < m_midrailCount + 1; ++ix)
+                {
+                    for (int i = 0; i < m_midstileCount; ++i)
+                    {
+						double panelTopY = m_TopRail + (ix * panelheight) + (ix * m_MidWidth);
+                        double stileX = m_LeftStile + ((i+1) * panelwidth) + (i * m_MidWidth);
+                        svg << Rect(stileX, panelTopY, m_MidWidth, panelheight);
+					}
+                }
             }
 
 
