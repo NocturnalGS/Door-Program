@@ -24,6 +24,9 @@ int main()
     doorlist.WritePanelCsvs(jobName);
     //doorlist.Print();
 
+    //TODO improve CSV import quote handling
+    //Export TigerStop Print checklist using html
+
     return 0;
 }
 
