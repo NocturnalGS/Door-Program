@@ -68,6 +68,7 @@ enum class ShakerPart
 struct TigerStopItem
 {
 	StockGroup group;
+	std::string material;
 	double length;
 	unsigned int quantity;
 	double nominal_width;
@@ -190,14 +191,14 @@ private:
 		return doorHeight;
 	}
 public:
-	double GetInnerPanelWidth(Construction cons, ShakerParts parts, double doorWidth, double doorHeight) const
+	double GetPanelWidth(Construction cons, ShakerParts parts, double doorWidth, double doorHeight) const
 	{
 		if (orientation == Orientation::VERTICAL)
 			return getWidth(cons, parts, doorWidth);
 		else
 			return getHeight(cons, parts, doorHeight);
 	}
-	double GetInnerPanelHeight(Construction cons, ShakerParts parts, double doorWidth, double doorHeight) const
+	double GetPanelHeight(Construction cons, ShakerParts parts, double doorWidth, double doorHeight) const
 	{
 		if (orientation == Orientation::VERTICAL)
 			return getHeight(cons, parts, doorHeight);
@@ -256,6 +257,19 @@ public:
 	bool hasNotes() const { return std::string(notes).length() > 0; }
 	unsigned int getQuantity() const { return quantity; }
 	double GetShakerPartWidth(ShakerPart part) const { return dimensions.shakerparts.width[static_cast<int>(part)]; }
+	std::string GetPanelMaterial() const 	
+	{
+		return std::string(material);
+	}
+	double GetPanelWidth() const 
+	{ 
+		return dimensions.panel.GetPanelWidth(construction, dimensions.shakerparts, dimensions.GetOversizedWidth(), dimensions.GetOversizedHeight());
+	}
+	double GetPanelHeight() const 
+	{ 
+		return dimensions.panel.GetPanelHeight(construction, dimensions.shakerparts, dimensions.GetOversizedWidth(), dimensions.GetOversizedHeight());
+	}
+	double GetRabbet() const { return dimensions.shakerparts.rabbet; }
 	bool hasMidRail() const { return dimensions.shakerparts.mid_rail_count > 0; }
 	bool hasMidStile() const { return dimensions.shakerparts.mid_stile_count > 0; }
 	bool hasBoneDetail() const { return dimensions.bonedetail != 0.0; }
@@ -493,6 +507,18 @@ public:
 	{
 		return dimensions.panel.GetPanelCount(construction, dimensions.shakerparts);
 	}
+	std::string getPanelName() const
+	{
+		return name;
+	}
+	std::string getPanelLabel() const
+	{
+		return label;
+	}
+	int getPanelQuantity() const
+	{
+		return getPanelcount() * quantity;
+	}
 
 	Construction getConstruction() const { return construction; }
 	bool Create(const CsvRow& row, size_t row_index, std::vector<CsvError>& errors);
@@ -551,11 +577,37 @@ class DoorList
 	std::vector<Door> m_doors;
 	void ReadCsvTable(CsvTable doorsTable);
 	void makeUniqueLabels();
+	bool containsShaker() const {
+		for (const auto& door : m_doors)
+		{
+			if (door.getConstruction() == Construction::Shaker)
+				return true;
+		}
+		return false;
+	}
+	bool containsSmallShaker() const
+	{
+		for (const auto& door : m_doors)
+		{
+			if (door.getConstruction() == Construction::SmallShaker)
+				return true;
+		}
+		return false;
+	}
+	bool containsSlab() const
+	{
+		for (const auto& door : m_doors)
+		{
+			if (door.getConstruction() == Construction::Slab)
+				return true;
+		}
+		return false;
+	}
 public:
 	DoorList(CsvTable doorsTable);
 	void WriteHTMLReport(const char* folder) const;
-	void WriteTigerStopCsvs(std::string& folder, std::string& jobname) const;
-	void WriteShakerPanelCsv(std::string& folder, std::string& jobname) const;
+	void WriteTigerStopCsvs(std::string& jobname) const;
+	void WritePanelCsvs(std::string& jobname) const;
 	void Print();
 	double GetTotalPerimeter() const
 	

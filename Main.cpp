@@ -2,10 +2,6 @@
 #include "Windows.h"
 #include "Door.h"
 #include "CsvUtils.h"
-#include "HTML.h"
-
-void WriteExample();
-//void GenerateDoorSheet();
 
 int main()
 {
@@ -20,19 +16,15 @@ int main()
         std::cout << "No file selected\n";
         return 0;
     }
-    std::filesystem::path p(csvPath);
-    // filename without extension
-    std::string filename = p.stem().string();
 
     CsvTable doortable = CsvReader::Read(csvPath);
     DoorList doorlist(doortable);
     doorlist.WriteHTMLReport(jobName.c_str());
 
     // add mid rail and multiple to report drawing
-    // Add panel csv!!
 
-    std::string dir = filename;
-    doorlist.WriteTigerStopCsvs(dir, jobName);
+    doorlist.WriteTigerStopCsvs(jobName);
+    doorlist.WritePanelCsvs(jobName);
     doorlist.Print();
 
     return 0;
