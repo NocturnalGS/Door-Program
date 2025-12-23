@@ -7,7 +7,6 @@
 #include <vector>
 #include <map>
 #include <fstream>
-#include <tuple>
 #include <string>
 
 
@@ -558,39 +557,6 @@ tfoot { display: table-footer-group; }
 
 void DoorList::WritePanelCsvs(std::string& jobname) const
 {
-    //if (containsShaker())
-    //{
-    //    std::filesystem::path baseDir("Shaker Panels");
-    //    std::filesystem::create_directories(baseDir);
-
-    //    std::map<std::string, std::ofstream> files;
-
-    //    for (const auto& door : m_doors)
-    //    {
-    //        if (door.getConstruction() != Construction::Shaker)
-    //            continue;
-
-    //        const std::string material = door.GetPanelMaterial();
-
-    //        // Open file for this material if it doesn't exist yet
-    //        auto& out = files[material];
-    //        if (!out.is_open())
-    //        {
-    //            std::ostringstream filename;
-    //            filename << jobname << " " << material << " Shaker Panels.csv";
-
-    //            out.open(baseDir / filename.str());
-    //            out << "Name,Label,Qty,Width,Height,Rabbet\n";
-    //        }
-
-    //        out << door.getPanelName() << ","
-    //            << door.getPanelLabel() << ","
-    //            << door.getPanelQuantity() << ","
-    //            << FormatTrimmed(door.GetPanelWidth()) << ","
-    //            << FormatTrimmed(door.GetPanelHeight()) << ","
-    //            << FormatTrimmed(door.GetRabbet()) << "\n";
-    //    }
-    //}
     if (containsShaker())
     {
         for (const auto& door : m_doors)
@@ -682,151 +648,8 @@ void DoorList::WritePanelCsvs(std::string& jobname) const
                 << FormatTrimmed(door.GetPanelHeight()) << "\n";
         }
     }
-
-
-
-    //if (containsSmallShaker())
-    //{
-    //    std::filesystem::path baseDir("Small Shaker Panels");
-    //    std::filesystem::create_directories(baseDir);
-
-    //    std::map<std::string, std::ofstream> files;
-
-    //    for (const auto& door : m_doors)
-    //    {
-    //        if (door.getConstruction() != Construction::SmallShaker)
-    //            continue;
-
-    //        const std::string material = door.GetPanelMaterial();
-    //        auto& out = files[material];
-
-    //        if (!out.is_open())
-    //        {
-    //            std::ostringstream filename;
-    //            filename << jobname << " " << material << " Small Shaker Panels.csv";
-    //            out.open(baseDir / filename.str());
-    //            out << "Name,Label,Qty,Width,Height\n";
-    //        }
-
-    //        out << door.getPanelName() << ","
-    //            << door.getPanelLabel() << ","
-    //            << door.getPanelQuantity() << ","
-    //            << FormatTrimmed(door.GetPanelWidth()) << ","
-    //            << FormatTrimmed(door.GetPanelHeight()) << "\n";
-    //    }
-    //}
-    //if (containsSlab())
-    //{
-    //    std::filesystem::path baseDir("Slab Doors");
-    //    std::filesystem::create_directories(baseDir);
-
-    //    std::map<std::string, std::ofstream> files;
-
-    //    for (const auto& door : m_doors)
-    //    {
-    //        if (door.getConstruction() != Construction::Slab)
-    //            continue;
-
-    //        const std::string material = door.GetPanelMaterial();
-    //        auto& out = files[material];
-
-    //        if (!out.is_open())
-    //        {
-    //            std::ostringstream filename;
-    //            filename << jobname << " " << material << " Slab Doors.csv";
-    //            out.open(baseDir / filename.str());
-    //            out << "Name,Label,Qty,Width,Height\n";
-    //        }
-
-    //        out << door.getPanelName() << ","
-    //            << door.getPanelLabel() << ","
-    //            << door.getPanelQuantity() << ","
-    //            << FormatTrimmed(door.GetPanelWidth()) << ","
-    //            << FormatTrimmed(door.GetPanelHeight()) << "\n";
-    //    }
-    //}
 }
 
-//void DoorList::WritePanelCsvs(std::string& jobname) const
-//{
-//    if (containsShaker())
-//    {
-//        std::ostringstream filename;
-//        filename << jobname << " Shaker Panels.csv";
-//        std::filesystem::path dir("Shaker Panels");
-//        std::filesystem::create_directories(dir);
-//        std::ofstream out(dir / filename.str());
-//        if (out)
-//        {
-//            out << "Name,Label,Qty,Width,Height,Rabbet\n";
-//        }
-//        for (const auto& door : m_doors)
-//        {
-//
-//            if (door.getConstruction() == Construction::Shaker)
-//            {
-//                out << door.getPanelName() << ","
-//                    << door.getPanelLabel() << ","
-//                    << door.getPanelQuantity() << ","
-//                    << FormatTrimmed(door.GetPanelWidth()) << ","
-//                    << FormatTrimmed(door.GetPanelHeight()) << ","
-//                    << FormatTrimmed(door.GetRabbet()) << "\n";
-//            }
-//        }
-//    }
-//    if (containsSmallShaker())
-//    {
-//        std::ostringstream filename;
-//        filename << jobname << " Small Shaker Panels.csv";
-//        std::filesystem::path dir("Small Shaker Panels");
-//        std::filesystem::create_directories(dir);
-//        std::ofstream out(dir / filename.str());
-//        if (out)
-//        {
-//            out << "Name,Label,Qty,Width,Height\n";
-//        }
-//        for (const auto& door : m_doors)
-//        {
-//            if (door.getConstruction() == Construction::SmallShaker)
-//            {
-//	    		out << door.getPanelName() << ","
-//	    			<< door.getPanelLabel() << ","
-//	    			<< door.getPanelQuantity() << ","
-//	    			<< FormatTrimmed(door.GetPanelWidth()) << ","
-//	    			<< FormatTrimmed(door.GetPanelHeight()) << "\n";
-//				std::string debug = "";
-//                debug += door.getPanelName() + ","
-//                    + door.getPanelLabel() + ","
-//                    + std::to_string(door.getPanelQuantity()) + ","
-//                    + FormatTrimmed(door.GetPanelWidth()) + ","
-//					+ FormatTrimmed(door.GetPanelHeight()) + "\n";
-//            }
-//        }
-//    }
-//    if (containsSlab())
-//    {
-//        std::ostringstream filename;
-//        filename << jobname << " Slab Doors.csv";
-//        std::filesystem::path dir("Slab Doors");
-//        std::filesystem::create_directories(dir);
-//        std::ofstream out(dir / filename.str());
-//        if (out)
-//        {
-//            out << "Name,Label,Qty,Width,Height\n";
-//        }
-//        for (const auto& door : m_doors)
-//        {
-//            if (door.getConstruction() == Construction::Slab)
-//            {
-//                out << door.getPanelName() << ","
-//                    << door.getPanelLabel() << ","
-//                    << door.getPanelQuantity() << ","
-//                    << FormatTrimmed(door.GetPanelWidth()) << ","
-//                    << FormatTrimmed(door.GetPanelHeight()) << "\n";
-//            }
-//        }
-//    }
-//}
 
 // helper to turn group enum into text
 static std::string GroupToString(StockGroup g)
@@ -839,47 +662,6 @@ static std::string GroupToString(StockGroup g)
     }
     return "UNKNOWN";
 }
-
-//void WriteGroupedCSVs(const std::vector<TigerStopItem>& items, const std::string& jobname)
-//{
-//    //using Inner = std::map<double, unsigned int>; // length -> qty
-//    using Inner = std::map<double, unsigned int, std::greater<double>>;
-//    using Key = std::pair<StockGroup, double>;  // group + width
-//
-//    std::map<Key, Inner> grouped;
-//
-//    for (const auto& it : items)
-//    {
-//        Key key{ it.group, it.nominal_width };
-//        grouped[key][it.length] += it.quantity;
-//    }
-//
-//    std::filesystem::path dir("Tiger Stop");
-//    std::filesystem::create_directories(dir);
-//
-//    for (auto& [key, lengths] : grouped)
-//    {
-//        auto [group, width] = key;
-//
-//        std::ostringstream filename;
-//        filename << jobname << " "
-//            << GroupToString(group) << " "
-//            << FormatTrimmed(width)
-//            << ".csv";
-//
-//        std::ofstream out(dir / filename.str());
-//        if (!out)
-//            continue;
-//
-//        out << "length,quantity\n";
-//
-//        for (auto& [length, qty] : lengths)
-//        {
-//            out << FormatTrimmed(length) << ","
-//                << qty << "\n";
-//        }
-//    }
-//}
 
 void WriteGroupedCSVs(const std::vector<TigerStopItem>& items,
     const std::string& jobname)

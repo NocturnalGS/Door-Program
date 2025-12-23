@@ -571,7 +571,7 @@ namespace Html::Svg
         bool m_bHasMidRail;
         double m_stroke;
         std::string m_label;
-        double m_Scale_Factor = 0.9;
+        double m_Scale_Factor = 0.98;
 
         void DrawOuter(std::ostringstream& svg) const
         {

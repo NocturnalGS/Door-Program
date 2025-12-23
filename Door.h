@@ -32,8 +32,6 @@ enum class StockGroup
 	Small_Shaker_Rail
 };
 
-
-
 enum class FaceType
 {
 	Door,
@@ -143,7 +141,7 @@ struct ShakerParts
 				return 0.0;
 			}
 		}
-		if (construction == Construction::SmallShaker)
+		else if (construction == Construction::SmallShaker)
 		{
 			switch (part)
 			{
