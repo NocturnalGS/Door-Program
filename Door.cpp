@@ -565,7 +565,8 @@ void DoorList::WritePanelCsvs(std::string& jobname) const
         {
             if (door.getConstruction() != Construction::Shaker)
                 continue;
-
+            if (!door.hasPanel())
+                continue;
             const std::string material = door.GetPanelMaterial();
             std::filesystem::path dir(material);
             std::filesystem::create_directories(dir);
@@ -587,7 +588,7 @@ void DoorList::WritePanelCsvs(std::string& jobname) const
                 << door.getPanelQuantity() << ","
                 << FormatTrimmed(door.GetPanelWidth()) << ","
                 << FormatTrimmed(door.GetPanelHeight()) << ","
-                << FormatTrimmed(door.GetRabbet()) << "\n";
+                << FormatTrimmed(door.GetPanelRabbet()) << "\n";
         }
     }
     if (containsSmallShaker())

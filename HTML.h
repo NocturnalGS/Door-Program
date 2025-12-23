@@ -623,7 +623,7 @@ namespace Html::Svg
                 for (int i = 0; i < m_midrailCount; ++i)
                 {
                     double railY = m_bonedetail + m_TopRail + (i+1) * panelheight + (m_MidWidth * i);
-                    svg << Rect(m_bonedetail + m_LeftStile, railY, w - (m_bonedetail + m_LeftStile + m_RightStile), m_MidWidth);
+                    svg << Rect(m_bonedetail + m_LeftStile, railY, w - (m_bonedetail * 2 + m_LeftStile + m_RightStile), m_MidWidth);
 				}
                 for (int ix = 0; ix < m_midrailCount + 1; ++ix)
                 {

@@ -22,7 +22,7 @@ int main()
     doorlist.WriteHTMLReport(jobName.c_str());
     doorlist.WriteTigerStopCsvs(jobName);
     doorlist.WritePanelCsvs(jobName);
-    doorlist.Print();
+    //doorlist.Print();
 
     return 0;
 }

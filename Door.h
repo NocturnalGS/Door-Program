@@ -80,18 +80,24 @@ struct ShakerParts
 	double cope_tolerance = 0.0;
 	unsigned int mid_rail_count = 0;
 	unsigned int mid_stile_count = 0;
-	double GetPartWidth(ShakerPart part) const
+	double GetPartWidth(ShakerPart part, Construction con) const
 	{ 
+		double adjustment = 0.0;
+		if (con == Construction::Shaker)
+		{
+			adjustment = stick_tolerance;
+		}
+
 		switch(part)
 		{
 		case ShakerPart::TOP_RAIL:
 		case ShakerPart::BOTTOM_RAIL:
 		case ShakerPart::LEFT_STILE:
 		case ShakerPart::RIGHT_STILE:
-			return width[static_cast<int>(part)] - stick_tolerance;
+			return width[static_cast<int>(part)] - adjustment;
 		case ShakerPart::MID_RAIL:
 		case ShakerPart::MID_STILE:
-			return width[static_cast<int>(part)] - (stick_tolerance * 2.0);
+			return width[static_cast<int>(part)] - (adjustment * 2.0);
 		default:
 			return 0.0;
 		}
@@ -125,18 +131,18 @@ struct ShakerParts
 			{
 			case ShakerPart::TOP_RAIL:
 			case ShakerPart::BOTTOM_RAIL:
-				return doorWidth - GetPartWidth(ShakerPart::LEFT_STILE) - GetPartWidth(ShakerPart::RIGHT_STILE) + (rabbet * 2) + cope_tolerance * 2;
+				return doorWidth - GetPartWidth(ShakerPart::LEFT_STILE, construction) - GetPartWidth(ShakerPart::RIGHT_STILE, construction) + (rabbet * 2) + cope_tolerance * 2;
 			case ShakerPart::MID_RAIL:
 				if (mid_rail_count == 0)
 					return 0.0;
-				return doorWidth - GetPartWidth(ShakerPart::LEFT_STILE) - GetPartWidth(ShakerPart::RIGHT_STILE) + (rabbet * 2) + cope_tolerance * 2;
+				return doorWidth - GetPartWidth(ShakerPart::LEFT_STILE, construction) - GetPartWidth(ShakerPart::RIGHT_STILE, construction) + (rabbet * 2) + cope_tolerance * 2;
 			case ShakerPart::LEFT_STILE:
 			case ShakerPart::RIGHT_STILE:
 				return doorHeight;
 			case ShakerPart::MID_STILE:
 				if (mid_stile_count == 0)
 					return 0.0;
-				return doorHeight - GetPartWidth(ShakerPart::TOP_RAIL) - GetPartWidth(ShakerPart::BOTTOM_RAIL) - (GetPartWidth(ShakerPart::MID_RAIL) * mid_rail_count) + (rabbet * 2) + cope_tolerance * 2;
+				return doorHeight - GetPartWidth(ShakerPart::TOP_RAIL, construction) - GetPartWidth(ShakerPart::BOTTOM_RAIL, construction) - (GetPartWidth(ShakerPart::MID_RAIL, construction) * mid_rail_count) + (rabbet * 2) + cope_tolerance * 2;
 			default:
 				return 0.0;
 			}
@@ -175,48 +181,54 @@ private:
 	double getWidth(Construction cons, ShakerParts parts, double doorWidth) const
 	{
 		if (cons == Construction::Shaker)
-			return doorWidth - parts.GetPartWidth(ShakerPart::LEFT_STILE) - parts.GetPartWidth(ShakerPart::RIGHT_STILE) - parts.GetPartWidth(ShakerPart::MID_STILE) * parts.mid_stile_count - ALLOWANCE;
+		{
+			double panelWidth = doorWidth - parts.GetPartWidth(ShakerPart::LEFT_STILE, cons) - parts.GetPartWidth(ShakerPart::RIGHT_STILE, cons) - parts.GetPartWidth(ShakerPart::MID_STILE, cons) * parts.mid_stile_count - ALLOWANCE;
+			return (panelWidth / (parts.mid_stile_count + 1));
+		}
 		if (cons == Construction::SmallShaker)
-			return doorWidth - parts.GetPartWidth(ShakerPart::LEFT_STILE) - parts.GetPartWidth(ShakerPart::RIGHT_STILE);
+			return doorWidth - parts.GetPartWidth(ShakerPart::LEFT_STILE, cons) - parts.GetPartWidth(ShakerPart::RIGHT_STILE, cons);
 		return doorWidth;
 	}
 	double getHeight(Construction cons, ShakerParts parts, double doorHeight) const
 	{
 		if (cons == Construction::Shaker)
-			return doorHeight - parts.GetPartWidth(ShakerPart::TOP_RAIL) - parts.GetPartWidth(ShakerPart::BOTTOM_RAIL) - parts.GetPartWidth(ShakerPart::MID_RAIL) * parts.mid_rail_count - ALLOWANCE;
+		{
+			double panelHeight = doorHeight - parts.GetPartWidth(ShakerPart::TOP_RAIL, cons) - parts.GetPartWidth(ShakerPart::BOTTOM_RAIL, cons) - parts.GetPartWidth(ShakerPart::MID_RAIL, cons) * parts.mid_rail_count - ALLOWANCE;
+			return panelHeight / (parts.mid_rail_count + 1);
+		}
 		if (cons == Construction::SmallShaker)
-			return doorHeight - parts.GetPartWidth(ShakerPart::TOP_RAIL) - parts.GetPartWidth(ShakerPart::BOTTOM_RAIL);
+			return doorHeight - parts.GetPartWidth(ShakerPart::TOP_RAIL, cons) - parts.GetPartWidth(ShakerPart::BOTTOM_RAIL, cons);
 		return doorHeight;
 	}
 public:
-	double GetPanelWidth(Construction cons, ShakerParts parts, double doorWidth, double doorHeight) const
+	double GetPanelWidth(Construction cons, ShakerParts parts, double doorWidth, double doorHeight, bool useOrientation = true) const
 	{
-		if (orientation == Orientation::VERTICAL)
-			return getWidth(cons, parts, doorWidth);
-		else
-			return getHeight(cons, parts, doorHeight);
+		if (useOrientation)
+		{
+			if (orientation == Orientation::VERTICAL)
+				return getWidth(cons, parts, doorWidth);
+			else
+				return getHeight(cons, parts, doorHeight);
+		}
+		return getWidth(cons, parts, doorWidth);
 	}
-	double GetPanelHeight(Construction cons, ShakerParts parts, double doorWidth, double doorHeight) const
+	double GetPanelHeight(Construction cons, ShakerParts parts, double doorWidth, double doorHeight, bool useOrientation = true) const
 	{
-		if (orientation == Orientation::VERTICAL)
-			return getHeight(cons, parts, doorHeight);
-		else
-			return getWidth(cons, parts, doorWidth);
-	}
-	double GetPanelWidthWithRabbet(Construction cons, ShakerParts parts, double doorWidth, double doorHeight) const
-	{
-		return getWidth(cons, parts, doorWidth) + parts.rabbet * 2 - RABBET_ALLOWANCE;
-	}
-	double GetPanelHeightWithRabbet(Construction cons, ShakerParts parts, double doorWidth, double doorHeight) const
-	{
-		return getHeight(cons, parts, doorHeight) + parts.rabbet * 2 - RABBET_ALLOWANCE;
+		if (useOrientation)
+		{
+			if (orientation == Orientation::VERTICAL)
+				return getHeight(cons, parts, doorHeight);
+			else
+				return getWidth(cons, parts, doorWidth);
+		}
+		return getHeight(cons, parts, doorHeight);
 	}
 	unsigned int GetPanelCount(Construction cons, ShakerParts parts) const
 	{
 		if (hasPanel && (cons == Construction::Shaker || cons == Construction::SmallShaker))
 			return (parts.mid_rail_count + 1) * (parts.mid_stile_count + 1);
 		else
-			return 0;
+			return 1;
 	}
 };
 
@@ -268,7 +280,7 @@ public:
 	{ 
 		return dimensions.panel.GetPanelHeight(construction, dimensions.shakerparts, dimensions.GetOversizedWidth(), dimensions.GetOversizedHeight());
 	}
-	double GetRabbet() const { return dimensions.shakerparts.rabbet; }
+	double GetPanelRabbet() const { return dimensions.shakerparts.rabbet - RABBET_ALLOWANCE; }
 	bool hasMidRail() const { return dimensions.shakerparts.mid_rail_count > 0; }
 	bool hasMidStile() const { return dimensions.shakerparts.mid_stile_count > 0; }
 	bool hasBoneDetail() const { return dimensions.bonedetail != 0.0; }
@@ -306,14 +318,20 @@ public:
 	}
 	std::string getPanelWidthString(int denom) const
 	{
-		double panelWidth = dimensions.panel.GetPanelWidthWithRabbet(construction, dimensions.shakerparts, dimensions.GetOversizedWidth(), dimensions.GetOversizedHeight());
+		double rabbet = 0.0;
+		if (construction == Construction::Shaker)
+			rabbet = GetPanelRabbet() * 2.0;
+		double panelWidth = dimensions.panel.GetPanelWidth(construction, dimensions.shakerparts, dimensions.GetOversizedWidth(), dimensions.GetOversizedHeight(), false) + rabbet;
 		Fraction panelwidthfrac(panelWidth, denom);
 		std::string panelwidthstr = "Panel Width: " + panelwidthfrac.GetDecimalString();
 		return panelwidthstr;
 	}
 	std::string getPanelHeightString(int denom) const
 	{
-		double panelHeight = dimensions.panel.GetPanelHeightWithRabbet(construction, dimensions.shakerparts, dimensions.GetOversizedWidth(), dimensions.GetOversizedHeight());
+		double rabbet = 0.0;
+		if (construction == Construction::Shaker)
+			rabbet = GetPanelRabbet() * 2.0;
+		double panelHeight = dimensions.panel.GetPanelHeight(construction, dimensions.shakerparts, dimensions.GetOversizedWidth(), dimensions.GetOversizedHeight(), false) + rabbet;
 		Fraction panelheightfrac(panelHeight, denom);
 		std::string panelheightstr = "Panel Height: " + panelheightfrac.GetDecimalString();
 		return panelheightstr;
