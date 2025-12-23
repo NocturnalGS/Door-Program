@@ -255,6 +255,7 @@ public:
 	bool hasNotes() const { return std::string(notes).length() > 0; }
 	unsigned int getQuantity() const { return quantity; }
 	double GetShakerPartWidth(ShakerPart part) const { return dimensions.shakerparts.width[static_cast<int>(part)]; }
+	double GetBoneDetail() const { return dimensions.bonedetail; }
 	std::string GetPanelMaterial() const 	
 	{
 		return std::string(material);

@@ -465,6 +465,7 @@ namespace Html::Svg
             m_MidWidth(12), 
             m_midrailCount(0),
             m_midstileCount(0),
+            m_bonedetail(0.0),
             m_stroke(1.5)
         {}
 
@@ -530,6 +531,12 @@ namespace Html::Svg
             return *this;
 		}
 
+        DoorDiagram& SetBoneDetail(double v)
+        {
+            m_bonedetail = v;
+            return *this;
+        }
+
         DoorDiagram& SetStrokeWidth(double w)
         {
             m_stroke = w;
@@ -577,6 +584,7 @@ namespace Html::Svg
         double m_MidWidth;
         int m_midrailCount;
 		int m_midstileCount;
+        double m_bonedetail;
         double m_stroke;
         std::string m_label;
         double m_Scale_Factor = 0.98;
@@ -586,42 +594,55 @@ namespace Html::Svg
             double w = m_vbW;
             double h = m_vbH;
             svg << Rect(0,0,w,h);
+            //bone detail
+            svg << Line(0, 0, m_bonedetail, m_bonedetail);
+            svg << Line(w - m_bonedetail, m_bonedetail, w, 0);
+            svg << Line(0, h, m_bonedetail, h - m_bonedetail);
+            svg << Line(w - m_bonedetail, h - m_bonedetail, w, h);
+            svg << Rect(m_bonedetail, m_bonedetail, w - m_bonedetail * 2, h - m_bonedetail * 2);
         }
 
         void DrawFrame(std::ostringstream& svg) const
         {
             double w = m_vbW;
             double h = m_vbH;
+
             if (m_style == DoorStyle::Shaker)
             {
                 // Stiles
-                svg << Rect(0, 0, m_LeftStile, h);
-                svg << Rect(w - m_RightStile , 0, m_RightStile, h);
+                svg << Rect(m_bonedetail, m_bonedetail, m_LeftStile, h - m_bonedetail * 2);
+                svg << Rect(w - m_bonedetail - m_RightStile , m_bonedetail, m_RightStile, h - m_bonedetail * 2);
 
                 // Rails
-                svg << Rect(m_LeftStile, 0, w - (m_LeftStile + m_RightStile) , m_TopRail);
-                svg << Rect(m_LeftStile, h-m_BottomRail, w - (m_LeftStile + m_RightStile), m_BottomRail);
-				double panelheight = (h - (m_TopRail + m_BottomRail + m_MidWidth * m_midrailCount)) / (m_midrailCount + 1);
-				double panelwidth = (w - (m_LeftStile + m_RightStile + m_MidWidth * m_midstileCount)) / (m_midstileCount + 1);
+                svg << Rect(m_bonedetail + m_LeftStile, m_bonedetail, w - (m_LeftStile + m_RightStile + m_bonedetail * 2) , m_TopRail);
+                svg << Rect(m_bonedetail + m_LeftStile, h-(m_BottomRail + m_bonedetail), w - (m_LeftStile + m_RightStile + m_bonedetail * 2), m_BottomRail);
+
+
+				double panelheight = (h - (m_bonedetail * 2 + m_TopRail + m_BottomRail + m_MidWidth * m_midrailCount)) / (m_midrailCount + 1);
+				double panelwidth = (w - (m_bonedetail * 2 + m_LeftStile + m_RightStile + m_MidWidth * m_midstileCount)) / (m_midstileCount + 1);
                 for (int i = 0; i < m_midrailCount; ++i)
                 {
-                    double railY = m_TopRail + (i+1) * panelheight + (m_MidWidth * i);
-                    svg << Rect(m_LeftStile, railY, w - (m_LeftStile + m_RightStile), m_MidWidth);
+                    double railY = m_bonedetail + m_TopRail + (i+1) * panelheight + (m_MidWidth * i);
+                    svg << Rect(m_bonedetail + m_LeftStile, railY, w - (m_bonedetail + m_LeftStile + m_RightStile), m_MidWidth);
 				}
                 for (int ix = 0; ix < m_midrailCount + 1; ++ix)
                 {
                     for (int i = 0; i < m_midstileCount; ++i)
                     {
-						double panelTopY = m_TopRail + (ix * panelheight) + (ix * m_MidWidth);
-                        double stileX = m_LeftStile + ((i+1) * panelwidth) + (i * m_MidWidth);
+						double panelTopY = m_bonedetail + m_TopRail + (ix * panelheight) + (ix * m_MidWidth);
+                        double stileX = m_bonedetail + m_LeftStile + ((i+1) * panelwidth) + (i * m_MidWidth);
                         svg << Rect(stileX, panelTopY, m_MidWidth, panelheight);
 					}
                 }
             }
-
-
             if (m_style == DoorStyle::ShakerMitered)
-                DrawMiterSmallShaker(svg);
+            {
+                svg << Line(m_bonedetail, m_bonedetail, m_bonedetail+m_LeftStile, m_bonedetail+m_TopRail);
+                svg << Line(w - (m_RightStile + m_bonedetail), m_TopRail + m_bonedetail, w- m_bonedetail, m_bonedetail);
+                svg << Line(m_bonedetail, h- m_bonedetail, m_LeftStile + m_bonedetail, h - m_BottomRail - m_bonedetail);
+                svg << Line(w - m_bonedetail - m_RightStile, h - m_bonedetail - m_BottomRail, w - m_bonedetail, h - m_bonedetail);
+                svg << Rect(m_bonedetail + m_LeftStile, m_bonedetail + m_TopRail, w - (m_bonedetail+m_LeftStile + m_bonedetail + m_RightStile), h - (m_bonedetail + m_bonedetail + m_TopRail + m_BottomRail));
+            }
         }
         double scaleX(double x) const
         {
@@ -633,17 +654,6 @@ namespace Html::Svg
         {
             double cy = m_vbY + m_vbH / 2.0;
             return cy + (y - cy) * m_Scale_Factor;
-        }
-
-        void DrawMiterSmallShaker(std::ostringstream& svg) const
-        {
-            double w = m_vbW;
-            double h = m_vbH;
-            svg << Line(0, 0, m_LeftStile, m_TopRail);
-            svg << Line(w - m_RightStile, m_TopRail, w, 0);
-            svg << Line(0, h, m_LeftStile, h - m_BottomRail);
-            svg << Line(w - m_RightStile, h - m_BottomRail, w, h);
-            svg << Rect(m_LeftStile, m_TopRail, w - (m_LeftStile + m_RightStile), h - (m_TopRail + m_BottomRail));
         }
 
         std::string Rect(double x, double y, double w, double h) const

@@ -512,6 +512,7 @@ tfoot { display: table-footer-group; }
             .SetMidWidth(door.GetShakerPartWidth(ShakerPart::MID_RAIL))
             .SetMidRail(door.getMidRailcount())
 			.SetMidStile(door.getMidStilecount())
+            .SetBoneDetail(door.GetBoneDetail())
             .SetStrokeWidth(0.1)
             .SetLabel(door.getsvgLabel());
 
