@@ -26,6 +26,8 @@ int main()
 
     //TODO improve CSV import quote handling
     //Export TigerStop Print checklist using html
+    //Change Date format to month day year
+    //increase side margins
 
     return 0;
 }
