@@ -20,9 +20,6 @@ int main()
     CsvTable doortable = CsvReader::Read(csvPath);
     DoorList doorlist(doortable);
     doorlist.WriteHTMLReport(jobName.c_str());
-
-    // add mid rail and multiple to report drawing
-
     doorlist.WriteTigerStopCsvs(jobName);
     doorlist.WritePanelCsvs(jobName);
     doorlist.Print();
