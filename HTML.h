@@ -276,11 +276,6 @@ namespace Html
                 h1, h2, h3 {
                     margin: 1px 0;
                 }
-                table {
-                    border-collapse: collapse;
-                    width: 100%;
-                    margin-bottom: 0px;
-                }
                 th, td {
                     border: 1px solid #000;
                     padding: 0px 0px;
@@ -304,6 +299,7 @@ namespace Html
                 @media screen {
                     body {
                         background: #ccc;
+                        margin: 0 auto;
                     }
                 
                     .page {

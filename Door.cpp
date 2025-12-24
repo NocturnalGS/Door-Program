@@ -8,7 +8,13 @@
 #include <map>
 #include <fstream>
 #include <string>
-
+#include <iostream>
+#include <filesystem>
+#include <corecrt.h> // errno
+#include <unordered_map> // std::unordered_map
+#include <functional>
+#include <cstdio>
+#include "CsvUtils.h"
 
 bool Door::Create(const CsvRow& row, size_t row_index, std::vector<CsvError>& errors)
 {
@@ -249,14 +255,16 @@ void DoorList::WriteHTMLReport(const char* jobname) const
     Html::HtmlDocument doc(title);
 
 
-
-
     doc.AddStyle(R"(
 
 /* =====================
    NORMAL LAYOUT
 ===================== */
-
+table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-bottom: 0px;
+}
 .door-row {
     display: flex;
     width: 100%;
@@ -329,7 +337,7 @@ td {
 
 @page {
     size: Letter;
-    margin: 0.125in;
+    margin: 0.375in;
 }
 
 thead { display: table-header-group; }
@@ -345,8 +353,7 @@ tfoot { display: table-footer-group; }
 .page-header {
     position: fixed;
     top: 0.1in;
-    left: 0.25in;
-    right: 0.25in;
+    margin: 0 auto;
 
     font-family: Arial, sans-serif;
     font-size: 12px;
@@ -528,13 +535,6 @@ tfoot { display: table-footer-group; }
     doc.AddRawHtml(R"( 
 </td></tr>
 </tbody>
-
-<tfoot>
-<tr><td>
-    <div class="footer-space"></div>
-</td></tr>
-</tfoot>
-
 </table>
 )");
 
@@ -548,7 +548,7 @@ tfoot { display: table-footer-group; }
     hdr << "<div class='page-header'>Job: "
         << jobname
         << " &nbsp;&nbsp; | &nbsp;&nbsp; Date: "
-        << std::put_time(&tm, "%Y-%m-%d")
+        << std::put_time(&tm, "%m-%d-%Y")
         << "</div>";
 
     doc.AddRawHtml(hdr.str());
@@ -557,7 +557,7 @@ tfoot { display: table-footer-group; }
     doc.WriteToFile(file);
 }
 
-void DoorList::WritePanelCsvs(std::string& jobname) const
+void DoorList::WritePanelCsvs(const std::string& jobname) const
 {
     using CsvBuffers = std::map<std::filesystem::path, std::ostringstream>;
     CsvBuffers buffers;
@@ -665,18 +665,16 @@ static std::string GroupToString(StockGroup g)
     return "UNKNOWN";
 }
 
-void WriteGroupedCSVs(const std::vector<TigerStopItem>& items,
-    const std::string& jobname)
+static void WriteGroupedCSVs(const std::vector<TigerStopItem>& items, const std::string& jobname)
 {
     using LengthMap = std::map<double, unsigned int, std::greater<double>>;
-	using Material = std::string;
+    using Material = std::string;
     // Material ? Group ? Width ? Lengths
     using WidthMap = std::map<double, LengthMap>;
     using GroupMap = std::map<StockGroup, WidthMap>;
     using MaterialMap = std::map<Material, GroupMap>;
 
     MaterialMap grouped;
-
     // ---------- Grouping ----------
     for (const auto& it : items)
     {
@@ -688,6 +686,80 @@ void WriteGroupedCSVs(const std::vector<TigerStopItem>& items,
 
     std::filesystem::path dir("Tiger Stop");
     std::filesystem::create_directories(dir);
+
+    std::string title = std::string(jobname) + " TigerStop Report";
+    std::string file = std::string(jobname) + " TigerStop Report.html";
+    Html::HtmlDocument doc(title);
+
+    doc.AddStyle(R"(
+
+/* =====================
+   NORMAL LAYOUT
+===================== */
+
+table {
+    border-collapse: collapse;  
+    width: 100%;
+}
+
+
+h1,h2,h3,h4,h5,h6 {
+    white-space: pre; 
+    margin: 20;
+}
+
+p {
+    margin: 20;
+}
+td {
+    padding: 10;
+    margin: 20;
+}
+
+/* =====================
+   PAGE + PRINT CONTROL
+===================== */
+
+@page {
+    size: Letter;
+    margin: 0.5in;
+}
+
+@media screen {
+    body {
+        background: #ccc;
+    }
+
+    .page {
+        width: 8.5in;
+        margin: 0 auto;
+        background: white;
+        box-shadow: 0 0 10px rgba(0,0,0,0.4);
+    }
+
+    .page-inner {
+        margin: 0.5in;
+    }
+}
+
+)");
+
+    auto now = std::chrono::system_clock::now();
+    std::time_t t = std::chrono::system_clock::to_time_t(now);
+
+    std::tm tm {};
+    localtime_s(&tm, &t);   // <-- safe MSVC version
+
+    std::ostringstream hdr;
+    hdr << "<div class='page-header'>Job: "
+        << jobname
+        << " &nbsp;&nbsp; | &nbsp;&nbsp; Date: "
+        << std::put_time(&tm, "%m-%d-%Y")
+        << "</div>";
+
+    doc.AddRawHtml(hdr.str());
+    doc.AddHeading("TigerStop Report");
+
 
     // ---------- Writing ----------
     for (auto& [material, groups] : grouped)
@@ -702,25 +774,48 @@ void WriteGroupedCSVs(const std::vector<TigerStopItem>& items,
                     << GroupToString(group) << " "
                     << FormatTrimmed(width)
                     << ".csv";
+ 
+
 
                 std::ofstream out(dir / filename.str());
                 if (!out)
                     continue;
 
                 out << "length,quantity\n";
+                Html::HtmlTable maintable;
+                maintable.AddColumn({ "Material", "16%" });
+                maintable.AddColumn({ "Type", "16%" });
+                maintable.AddColumn({ "Width", "22%" });
+                maintable.AddColumn({ "Length", "36%" });
+                maintable.AddColumn({ "Quantity", "10%" });
 
                 for (auto& [length, qty] : lengths)
                 {
+					Fraction lengthfrac(length, 32);
+					Fraction widthfrac(width, 32);
+                    maintable.AddRow({ material, GroupToString(group), widthfrac.GetString(), lengthfrac.GetString(), FormatTrimmed(qty)});
                     out << FormatTrimmed(length) << ","
                         << qty << "\n";
                 }
+                //maintable.AddRow({ " ", " ", " ", " ", " "});
+                //maintable.AddRow({ " ", " ", " ", " ", " " });
+	            doc.AddTable(maintable);
             }
         }
     }
+    doc.AddRawHtml(R"( 
+</td></tr>
+</tbody>
+</table>
+)");
+
+
+
+
+    doc.WriteToFile(file);
 }
 
-
-void DoorList::WriteTigerStopCsvs(std::string& jobname) const
+void DoorList::WriteTigerStopCsvs(const std::string& jobname) const
 {
     std::vector<TigerStopItem> cutlist;
 

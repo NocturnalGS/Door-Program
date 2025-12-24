@@ -1,4 +1,7 @@
 #pragma once
+#include <string> 
+#include <vector>
+#include <format>
 #include "CsvUtils.h"
 #include "HTML.h"
 
@@ -623,8 +626,8 @@ class DoorList
 public:
 	DoorList(CsvTable doorsTable);
 	void WriteHTMLReport(const char* folder) const;
-	void WriteTigerStopCsvs(std::string& jobname) const;
-	void WritePanelCsvs(std::string& jobname) const;
+	void WriteTigerStopCsvs(const std::string& jobname) const;
+	void WritePanelCsvs(const std::string& jobname) const;
 	void Print();
 	double GetTotalPerimeter() const
 	

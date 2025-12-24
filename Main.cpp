@@ -1,4 +1,5 @@
 ﻿#include <iostream>
+#include <string>
 #include "Windows.h"
 #include "Door.h"
 #include "CsvUtils.h"
@@ -23,10 +24,6 @@ int main()
     doorlist.WriteTigerStopCsvs(jobName);
     doorlist.WritePanelCsvs(jobName);
     //doorlist.Print();
-
-    //Export TigerStop Print checklist using html
-    //Change Date format to month day year
-    //increase side margins
 
     return 0;
 }

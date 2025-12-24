@@ -11,6 +11,8 @@
 #include <cstring>      // strncpy_s
 #include <filesystem>   // extractparentFolderName
 #include <shobjidl.h>   // IFileDialog
+#include <corecrt.h>  // errno
+#include <shtypes.h>    // SIGDN_FILESYSPATH
 
 
 //forward declarations
