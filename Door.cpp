@@ -559,6 +559,9 @@ tfoot { display: table-footer-group; }
 
 void DoorList::WritePanelCsvs(std::string& jobname) const
 {
+    using CsvBuffers = std::map<std::filesystem::path, std::ostringstream>;
+    CsvBuffers buffers;
+
     if (containsShaker())
     {
         for (const auto& door : m_doors)
@@ -575,15 +578,12 @@ void DoorList::WritePanelCsvs(std::string& jobname) const
             filename << jobname << " " << material << " Shaker Panels.csv";
 
             std::filesystem::path filePath = dir / filename.str();
-
-            std::ofstream out(filePath, std::ios::app);
-
-            if (std::filesystem::file_size(filePath) == 0)
+            std::ostringstream& buf = buffers[filePath];
+            if (buf.tellp() == 0)
             {
-                out << "Name,Label,Qty,Width,Height,Rabbet\n";
+                buf << "Name,Label,Qty,Width,Height,Rabbet\n";
             }
-
-            out << door.getPanelName() << ","
+            buf << door.getPanelName() << ","
                 << door.getPanelLabel() << ","
                 << door.getPanelQuantity() << ","
                 << FormatTrimmed(door.GetPanelWidth()) << ","
@@ -606,15 +606,12 @@ void DoorList::WritePanelCsvs(std::string& jobname) const
             filename << jobname << " " << material << " Small Shaker Panels.csv";
 
             std::filesystem::path filePath = dir / filename.str();
-
-            std::ofstream out(filePath, std::ios::app);
-
-            if (std::filesystem::file_size(filePath) == 0)
+            std::ostringstream& buf = buffers[filePath];
+            if (buf.tellp() == 0)
             {
-                out << "Name,Label,Qty,Width,Height\n";
+                buf << "Name,Label,Qty,Width,Height\n";
             }
-
-            out << door.getPanelName() << ","
+            buf << door.getPanelName() << ","
                 << door.getPanelLabel() << ","
                 << door.getPanelQuantity() << ","
                 << FormatTrimmed(door.GetPanelWidth()) << ","
@@ -636,20 +633,22 @@ void DoorList::WritePanelCsvs(std::string& jobname) const
             filename << jobname << " " << material << " Slab Doors.csv";
 
             std::filesystem::path filePath = dir / filename.str();
-
-            std::ofstream out(filePath, std::ios::app);
-
-            if (std::filesystem::file_size(filePath) == 0)
+            std::ostringstream& buf = buffers[filePath];
+            if (buf.tellp() == 0)
             {
-                out << "Name,Label,Qty,Width,Height\n";
+                buf << "Name,Label,Qty,Width,Height\n";
             }
-
-            out << door.getPanelName() << ","
+            buf << door.getPanelName() << ","
                 << door.getPanelLabel() << ","
                 << door.getPanelQuantity() << ","
                 << FormatTrimmed(door.GetPanelWidth()) << ","
-                << FormatTrimmed(door.GetPanelHeight()) << "\n";
-        }
+				<< FormatTrimmed(door.GetPanelHeight()) << "\n";
+		}
+    }
+    for (const auto& [filepath, buffer] : buffers)
+    {
+        std::ofstream out(filepath);
+        out << buffer.str();
     }
 }
 
