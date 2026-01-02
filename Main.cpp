@@ -21,7 +21,8 @@ int main()
     CsvTable doortable = CsvReader::Read(csvPath);
     DoorList doorlist(doortable);
     doorlist.WriteHTMLReport(jobName.c_str());
-    doorlist.WriteTigerStopCsvs(jobName);
+    if (doorlist.HasShaker())
+        doorlist.WriteTigerStopCsvs(jobName);
     doorlist.WritePanelCsvs(jobName);
     //doorlist.Print();
 

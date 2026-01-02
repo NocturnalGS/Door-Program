@@ -507,15 +507,17 @@ tfoot { display: table-footer-group; }
 			style = Html::Svg::DoorStyle::Shaker;
 		if (door.getConstruction() == Construction::SmallShaker)
 			style = Html::Svg::DoorStyle::ShakerMitered;
+        double railadjustment = door.getOversizeHeight() / 2.0;
+        double stileadjustment = door.getOversizeWidth() / 2.0;
 
         diagram
             .SetSize(50, 50)             // CSS size
             .SetViewBox(0, 0, door.getFinishedWidth(), door.getFinishedHeight())     // logical drawing space
             .SetDoorStyle(style)
-            .SetLeftStileWidth(door.GetShakerPartWidth(ShakerPart::LEFT_STILE))
-            .SetRightStileWidth(door.GetShakerPartWidth(ShakerPart::RIGHT_STILE))
-            .SetTopRailWidth(door.GetShakerPartWidth(ShakerPart::TOP_RAIL))
-            .SetBottomRailWidth(door.GetShakerPartWidth(ShakerPart::BOTTOM_RAIL))
+            .SetLeftStileWidth(door.GetShakerPartWidth(ShakerPart::LEFT_STILE) - stileadjustment)
+            .SetRightStileWidth(door.GetShakerPartWidth(ShakerPart::RIGHT_STILE) - stileadjustment)
+            .SetTopRailWidth(door.GetShakerPartWidth(ShakerPart::TOP_RAIL) - railadjustment)
+            .SetBottomRailWidth(door.GetShakerPartWidth(ShakerPart::BOTTOM_RAIL) - railadjustment)
             .SetMidWidth(door.GetShakerPartWidth(ShakerPart::MID_RAIL))
             .SetMidRail(door.getMidRailcount())
 			.SetMidStile(door.getMidStilecount())

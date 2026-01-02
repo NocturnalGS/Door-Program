@@ -629,6 +629,12 @@ public:
 	void WriteTigerStopCsvs(const std::string& jobname) const;
 	void WritePanelCsvs(const std::string& jobname) const;
 	void Print();
+	bool HasShaker()
+	{
+		if (containsShaker() || containsSmallShaker())
+			return true;
+		return false;
+	}
 	double GetTotalPerimeter() const
 	
 	{
