@@ -83,8 +83,8 @@ double Door::GetRail_Stile_Total_Length() const
     total += dimensions.shakerparts.GetCutLength(construction, ShakerPart::RIGHT_STILE, w, h);
     if (construction == Construction::Shaker)
     {
-        total += dimensions.shakerparts.GetCutLength(construction, ShakerPart::MID_RAIL, w, h) * getMidStilecount();
-        total += dimensions.shakerparts.GetCutLength(construction, ShakerPart::MID_STILE, w, h) * getMidRailcount();
+        total += dimensions.shakerparts.GetCutLength(construction, ShakerPart::MID_STILE, w, h) * getMidStilecount();
+        total += dimensions.shakerparts.GetCutLength(construction, ShakerPart::MID_RAIL, w, h) * getMidRailcount();
     }
     total *= quantity;
 
