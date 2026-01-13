@@ -25,6 +25,17 @@ int main()
         doorlist.WriteTigerStopCsvs(jobName);
     doorlist.WritePanelCsvs(jobName);
     //doorlist.Print();
+    
+    double linearfootage = doorlist.GetTotalLinearFootage();
+    double bonedetaillinearfootage = doorlist.GetTotalLinearFootageBoneDetail();
+    if(linearfootage > 0.1)
+    {
+        std::cout << "Linear Footage of Rails and Stiles: " << linearfootage << "\n";
+    }
+    if (bonedetaillinearfootage > 0.1)
+    {
+        std::cout << "Linear Footage of Bone Detail: " << bonedetaillinearfootage << "\n";
+    }
 
     return 0;
 }

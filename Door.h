@@ -271,6 +271,8 @@ public:
 	unsigned int getQuantity() const { return quantity; }
 	double GetShakerPartWidth(ShakerPart part) const { return dimensions.shakerparts.width[static_cast<int>(part)]; }
 	double GetBoneDetail() const { return dimensions.bonedetail; }
+	double GetRail_Stile_Total_Length() const;
+	double GetBoneDetail_Total_Length() const;
 	std::string GetPanelMaterial() const 	
 	{
 		return std::string(material);
@@ -644,6 +646,30 @@ public:
 			perimeter += door.GetPerimeter();
 		}
 		return perimeter;
+	}
+
+	double GetTotalLinearFootage() const
+
+	{
+		double length = 0.0;
+		for (const auto& door : m_doors)
+		{
+			length += door.GetRail_Stile_Total_Length();
+		}
+		double footage = length / 12.0;
+		return footage;
+	}
+
+	double GetTotalLinearFootageBoneDetail() const
+
+	{
+		double length = 0.0;
+		for (const auto& door : m_doors)
+		{
+			length += door.GetBoneDetail_Total_Length();
+		}
+		double footage = length / 12.0;
+		return footage;
 	}
 
 };

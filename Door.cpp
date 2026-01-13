@@ -70,6 +70,41 @@ bool Door::Create(const CsvRow& row, size_t row_index, std::vector<CsvError>& er
     return true;
 }
 
+double Door::GetRail_Stile_Total_Length() const
+{
+    if (construction == Construction::Slab)
+        return 0.0;
+    const double w = dimensions.GetOversizedWidth();
+    const double h = dimensions.GetOversizedHeight();
+    double total = 0.0;
+    total += dimensions.shakerparts.GetCutLength(construction, ShakerPart::TOP_RAIL, w, h);
+    total += dimensions.shakerparts.GetCutLength(construction, ShakerPart::BOTTOM_RAIL, w, h);
+    total += dimensions.shakerparts.GetCutLength(construction, ShakerPart::LEFT_STILE, w, h);
+    total += dimensions.shakerparts.GetCutLength(construction, ShakerPart::RIGHT_STILE, w, h);
+    if (construction == Construction::Shaker)
+    {
+        total += dimensions.shakerparts.GetCutLength(construction, ShakerPart::MID_RAIL, w, h) * getMidStilecount();
+        total += dimensions.shakerparts.GetCutLength(construction, ShakerPart::MID_STILE, w, h) * getMidRailcount();
+    }
+    total *= quantity;
+
+    return total;
+}
+
+
+double Door::GetBoneDetail_Total_Length() const
+{
+    if (construction == Construction::Slab)
+        return 0.0;
+    if (!hasBoneDetail())
+        return 0.0;
+    double total = 0.0;
+    total += dimensions.finishedWidth * 2.0;
+    total += dimensions.finishedHeight * 2.0;
+    total *= quantity;
+    return total;
+}
+
 bool Door::ValidatePanel(double& outWidth, double& outHeight) const
 {
 	const double minPanelSize = 1.0;
