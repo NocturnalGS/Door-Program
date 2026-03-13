@@ -25,6 +25,7 @@ int main()
         doorlist.WriteTigerStopCsvs(jobName);
     doorlist.WritePanelCsvs(jobName);
     //doorlist.Print();
+    doorlist.OverSize_SanityCheck();
     
     double linearfootage = doorlist.GetTotalLinearFootage();
     double bonedetaillinearfootage = doorlist.GetTotalLinearFootageBoneDetail();

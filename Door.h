@@ -631,6 +631,7 @@ public:
 	void WriteTigerStopCsvs(const std::string& jobname) const;
 	void WritePanelCsvs(const std::string& jobname) const;
 	void Print();
+	void OverSize_SanityCheck();
 	bool HasShaker()
 	{
 		if (containsShaker() || containsSmallShaker())

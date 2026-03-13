@@ -909,3 +909,75 @@ void DoorList::makeUniqueLabels()
         }
     }
 }
+
+void DoorList::OverSize_SanityCheck()
+{
+    int denom = 32;
+    for (auto& d : m_doors)
+    {
+        if (d.getConstruction() == Construction::Slab)
+        {
+            if (d.getOversizeWidth() > 0.0)
+            {
+                std::cout << "Warning!! " << d.getNameString() << ", (" << d.getFinishedWidthString(denom) << " by " << d.getFinishedHeightString(denom) << ") \n"
+                    << "Oversize Width: " << d.getOversizeWidth() << " is greater than 0 for Slab type! \n"
+                << std::endl;
+            }
+            if (d.getOversizeHeight() > 0.0)
+            {
+                std::cout << "Warning!! " << d.getNameString() << ", (" << d.getFinishedWidthString(denom) << " by " << d.getFinishedHeightString(denom) << ") \n"
+                    << "Oversize Height: " << d.getOversizeHeight() << " is greater than 0 for Slab type! \n"
+                << std::endl;
+            }
+            if (d.getOversizeWidth() < -0.0625)
+            {
+                std::cout << "Warning!! " << d.getNameString() << ", (" << d.getFinishedWidthString(denom) << " by " << d.getFinishedHeightString(denom) << ") \n"
+                    << "Oversize Width: " << d.getOversizeWidth() << " is less than 0.0625 for Slab type! \n"
+                    << std::endl;
+            }
+            if (d.getOversizeHeight() < -0.0625)
+            {
+                std::cout << "Warning!! " << d.getNameString() << ", (" << d.getFinishedWidthString(denom) << " by " << d.getFinishedHeightString(denom) << ") \n"
+                    << "Oversize Height: " << d.getOversizeHeight() << " is greater than 0.0625 for Slab type! \n"
+                    << std::endl;
+            }
+            if (d.getOversizeWidth() != d.getOversizeHeight())
+            {
+                std::cout << "Warning!! " << d.getNameString() << ", (" << d.getFinishedWidthString(denom) << " by " << d.getFinishedHeightString(denom) << ") \n"
+                    << "Oversize Width and Height do not match for Slab type! \n"
+                    << "Oversize Width: " << d.getOversizeWidth() << " Oversize Height: " << d.getOversizeHeight() << " \n"
+                    << std::endl;
+            }
+        }
+        if (d.getConstruction() == Construction::Shaker)
+        {
+            if (d.getOversizeWidth() < 0.0)
+            {
+                std::cout << "Warning!! " << d.getNameString() << ", (" << d.getFinishedWidthString(denom) << " by " << d.getFinishedHeightString(denom) << ") \n"
+                    << "Oversize Width: " << d.getOversizeWidth() << " is negative on Shaker type! \n"
+                    << std::endl;
+            }
+            if (d.getOversizeHeight() < 0.0)
+            {
+                std::cout << "Warning!! " << d.getNameString() << ", (" << d.getFinishedWidthString(denom) << " by " << d.getFinishedHeightString(denom) << ") \n"
+                    << "Oversize Height: " << d.getOversizeHeight() << " is negative on Shaker type! \n"
+                    << std::endl;
+            }
+        }
+        if (d.getConstruction() == Construction::SmallShaker)
+        {
+            if (d.getOversizeWidth() != 0.0)
+            {
+                std::cout << "Warning!! " << d.getNameString() << ", (" << d.getFinishedWidthString(denom) << " by " << d.getFinishedHeightString(denom) << ") \n"
+                    << "Oversize Width: " << d.getOversizeWidth() << " is not 0 for Small Shaker type! \n"
+                    << std::endl;
+            }
+            if (d.getOversizeHeight() != 0.0)
+            {
+                std::cout << "Warning!! " << d.getNameString() << ", (" << d.getFinishedWidthString(denom) << " by " << d.getFinishedHeightString(denom) << ") \n"
+                    << "Oversize Height: " << d.getOversizeHeight() << " is not 0 for Small Shaker type! \n"
+                    << std::endl;
+            }
+        }
+    }
+}
