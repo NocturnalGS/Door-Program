@@ -890,9 +890,15 @@ void DoorList::makeUniqueLabels()
     {
         std::string base = d.getlabelPtr();
 
+
         if (totalCount[base] > 1)
         {
             int idx = seen[base]++;
+
+            if (!d.hasPanel())
+            {
+                base = "G_" + base;
+            }
 
             // convert idx -> A,B,C,... AA,AB...
             int n = idx;
@@ -906,6 +912,13 @@ void DoorList::makeUniqueLabels()
 
             std::snprintf(d.getlabelPtr(), MAXTEXTSIZE, "%s%s",
                 base.c_str(), suffix.c_str());
+        }
+        else if (!d.hasPanel())
+        {
+            base = "G_" + base;
+
+            std::snprintf(d.getlabelPtr(), MAXTEXTSIZE, "%s",
+                base.c_str());
         }
     }
 }
