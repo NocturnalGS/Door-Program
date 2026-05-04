@@ -895,7 +895,7 @@ void DoorList::makeUniqueLabels()
         {
             int idx = seen[base]++;
 
-            if (!d.hasPanel())
+            if (!d.hasPanel() && d.getConstruction() != Construction::Slab)
             {
                 base = "G_" + base;
             }
@@ -913,7 +913,7 @@ void DoorList::makeUniqueLabels()
             std::snprintf(d.getlabelPtr(), MAXTEXTSIZE, "%s%s",
                 base.c_str(), suffix.c_str());
         }
-        else if (!d.hasPanel())
+        else if (!d.hasPanel() && d.getConstruction() != Construction::Slab)
         {
             base = "G_" + base;
 
