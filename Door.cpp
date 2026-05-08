@@ -234,6 +234,8 @@ void Door::AppendShakerLabel(std::vector<Shaker_CSV_Label>& label_list) const
 {
     if (getConstruction() != Construction::Shaker)
         return;
+    if (!hasPanel())
+        return;
     Shaker_CSV_Label csv_label = {};
     double doorwidth = dimensions.GetOversizedWidth();
     double doorheight = dimensions.GetOversizedHeight();
