@@ -230,6 +230,37 @@ void Door::AppendTigerStopCuts(std::vector<TigerStopItem>& cutlist) const
     }
 }
 
+void Door::AppendShakerLabel(std::vector<Shaker_CSV_Label>& label_list) const
+{
+    if (getConstruction() != Construction::Shaker)
+        return;
+    Shaker_CSV_Label csv_label = {};
+    double doorwidth = dimensions.GetOversizedWidth();
+    double doorheight = dimensions.GetOversizedHeight();
+    double railCutLength = dimensions.shakerparts.GetCutLength(Construction::Shaker, ShakerPart::TOP_RAIL, doorwidth, doorheight);
+    double stileCutLength = dimensions.shakerparts.GetCutLength(Construction::Shaker, ShakerPart::LEFT_STILE, doorwidth, doorheight);
+    int denom = 32;
+    csv_label.cabNumber = label;
+    csv_label.finishedSize = getFinishedSizeLabel(denom);
+    csv_label.railLength = "Rail: " + Fraction::FormatDecimal(railCutLength);
+    csv_label.stileLength = "Stile: " + Fraction::FormatDecimal(stileCutLength);
+    csv_label.notes = notes;
+    if (quantity > 1)
+    {
+        for (unsigned int i = 0; i < quantity; ++i)
+        {
+            std::string currentCount = std::to_string(i + 1);
+            std::string count = std::to_string(quantity);
+            csv_label.notes = currentCount + "of" + count + " " +notes;
+            label_list.push_back(csv_label);
+        }
+    }
+    else
+    {
+        label_list.push_back(csv_label);
+    }
+}
+
 void DoorList::ReadCsvTable(CsvTable doorsTable)
 {
     std::vector<CsvError> errors;
@@ -862,6 +893,32 @@ void DoorList::WriteTigerStopCsvs(const std::string& jobname) const
             door.AppendTigerStopCuts(cutlist);
     }
     WriteGroupedCSVs(cutlist, jobname);
+}
+
+void DoorList::WriteShakerLabelCsv(const std::string& jobname) const
+{
+    std::vector<Shaker_CSV_Label> label_list;
+
+    for (const auto& door : m_doors)
+    {
+        door.AppendShakerLabel(label_list);
+    }
+
+    const std::string filename = jobname + " Door Labels.csv";
+    std::ofstream csv_outfile(filename);
+    if (!csv_outfile)
+        return;
+
+    csv_outfile << "ID,Size,Rail,Stile,Notes\n";
+
+    for (const Shaker_CSV_Label& label : label_list)
+    {
+        csv_outfile << label.cabNumber << ","
+            << label.finishedSize << ","
+            << label.railLength << ","
+            << label.stileLength << ","
+            << label.notes << "\n";
+    }
 }
 
 DoorList::DoorList(CsvTable doorsTable)

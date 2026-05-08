@@ -40,7 +40,7 @@ public:
             direction--;
     }
 
-    std::string FormatDecimal(double value)
+    static std::string FormatDecimal(double value)
     {
         std::ostringstream oss;
         oss << std::fixed << std::setprecision(4) << value;
@@ -75,10 +75,25 @@ public:
 
         return std::to_string(whole) + " " + std::to_string(numerator) + "/" + std::to_string(denominator) + "\"";
     }
+    std::string GetFractionStringStrong() // up arrow means "Strong" cut a hair above the number, down arrow means cut a hair less
+    {
+        if (numerator == 0)
+            return std::to_string(whole) + "\"";
+        else if (whole == 0)
+            return std::to_string(numerator) + "/" + std::to_string(denominator) + "\"";
+
+        return std::to_string(whole) + " " + std::to_string(numerator) + "/" + std::to_string(denominator) + "\"" + GetStrongString();
+    }
     std::string GetRoundingString()
     {
         if (direction < 0) return "rounded down";
         else if (direction > 0) return "rounded up";
+        else return "";
+    }
+    std::string GetStrongString()
+    {
+        if (direction < 0) return "\u2191"; // up
+        else if (direction > 0) return "\u2193"; // down
         else return "";
     }
     std::string GetString(bool usedash = false)

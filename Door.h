@@ -14,6 +14,7 @@ constexpr double RABBET_ALLOWANCE = 0.0625;
 struct CsvRow;
 struct CsvTable;
 struct TigerStopItem;
+struct Shaker_CSV_Label;
 
 enum class StockGroup;
 enum class FaceType;
@@ -73,6 +74,15 @@ struct TigerStopItem
 	double length;
 	unsigned int quantity;
 	double nominal_width;
+};
+
+struct Shaker_CSV_Label
+{
+	std::string cabNumber;
+	std::string finishedSize;
+	std::string stileLength;
+	std::string railLength;
+	std::string notes;
 };
 
 struct ShakerParts
@@ -374,6 +384,14 @@ public:
 	double getOversizeWidth() const { return dimensions.oversizeWidth; }
 	double getOversizeHeight() const { return dimensions.oversizeHeight; }
 
+	std::string getFinishedSizeLabel(int denom) const
+	{
+		Fraction finishedwidthfrac(dimensions.finishedWidth, denom);
+		Fraction finishedheightfrac(dimensions.finishedHeight, denom);
+		std::string finishedsize = finishedwidthfrac.GetFractionStringStrong() + " x " + finishedheightfrac.GetFractionStringStrong();
+		return finishedsize;
+	}
+
 	std::string getFinishedWidthString(int denom) const
 	{
 		Fraction finishedwidthfrac(dimensions.finishedWidth, denom);
@@ -546,6 +564,7 @@ public:
 	bool Create(const CsvRow& row, size_t row_index, std::vector<CsvError>& errors);
 	void Print() const;
 	void AppendTigerStopCuts(std::vector<TigerStopItem>& cutlist) const;
+	void AppendShakerLabel(std::vector<Shaker_CSV_Label>& cutlist) const;
 	double GetPerimeter() const
 	{
 		return dimensions.finishedWidth * 2.0 + dimensions.finishedHeight * 2;
@@ -629,6 +648,7 @@ public:
 	DoorList(CsvTable doorsTable);
 	void WriteHTMLReport(const char* folder) const;
 	void WriteTigerStopCsvs(const std::string& jobname) const;
+	void WriteShakerLabelCsv(const std::string& jobname) const;
 	void WritePanelCsvs(const std::string& jobname) const;
 	void Print();
 	void OverSize_SanityCheck();

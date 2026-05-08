@@ -22,7 +22,10 @@ int main()
     DoorList doorlist(doortable);
     doorlist.WriteHTMLReport(jobName.c_str());
     if (doorlist.HasShaker())
+    {
         doorlist.WriteTigerStopCsvs(jobName);
+        doorlist.WriteShakerLabelCsv(jobName);
+    }
     doorlist.WritePanelCsvs(jobName);
     //doorlist.Print();
     doorlist.OverSize_SanityCheck();
