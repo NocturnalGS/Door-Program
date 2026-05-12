@@ -906,7 +906,7 @@ void DoorList::WriteShakerLabelCsv(const std::string& jobname) const
         door.AppendShakerLabel(label_list);
     }
 
-    const std::string filename = jobname + " Door Labels.csv";
+    const std::string filename = "LabelsList.csv";
     std::ofstream csv_outfile(filename);
     if (!csv_outfile)
         return;
