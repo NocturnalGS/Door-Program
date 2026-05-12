@@ -253,7 +253,11 @@ void Door::AppendShakerLabel(std::vector<Shaker_CSV_Label>& label_list) const
         {
             std::string currentCount = std::to_string(i + 1);
             std::string count = std::to_string(quantity);
-            csv_label.notes = currentCount + "of" + count + " " +notes;
+            std::string str_notes = notes;
+            if(str_notes.size() > 0)
+                csv_label.notes = currentCount + " of " + count + " " + str_notes;
+            else
+                csv_label.notes = currentCount + " of " + count;
             label_list.push_back(csv_label);
         }
     }
@@ -911,15 +915,16 @@ void DoorList::WriteShakerLabelCsv(const std::string& jobname) const
     if (!csv_outfile)
         return;
 
-    csv_outfile << "ID,Size,Rail,Stile,Notes\n";
+    csv_outfile << "Job,ID,Size,Rail,Stile,Notes\n";
 
     for (const Shaker_CSV_Label& label : label_list)
     {
-        csv_outfile << label.cabNumber << ","
-            << label.finishedSize << ","
-            << label.railLength << ","
-            << label.stileLength << ","
-            << label.notes << "\n";
+        csv_outfile << "\"" << jobname << "\","
+            << "\"" << label.cabNumber << "\","
+            << "\"" << label.finishedSize << "\","
+            << "\"" << label.railLength << "\","
+            << "\"" << label.stileLength << "\","
+            << "\"" << label.notes << "\"\n";
     }
 }
 
