@@ -247,22 +247,15 @@ void Door::AppendShakerLabel(std::vector<Shaker_CSV_Label>& label_list) const
     csv_label.railLength = "Rail: " + Fraction::FormatDecimal(railCutLength);
     csv_label.stileLength = "Stile: " + Fraction::FormatDecimal(stileCutLength);
     csv_label.notes = notes;
-    if (quantity > 1)
+    for (unsigned int i = 0; i < quantity; ++i)
     {
-        for (unsigned int i = 0; i < quantity; ++i)
-        {
-            std::string currentCount = std::to_string(i + 1);
-            std::string count = std::to_string(quantity);
-            std::string str_notes = notes;
-            if(str_notes.size() > 0)
-                csv_label.notes = currentCount + " of " + count + " " + str_notes;
-            else
-                csv_label.notes = currentCount + " of " + count;
-            label_list.push_back(csv_label);
-        }
-    }
-    else
-    {
+        std::string currentCount = std::to_string(i + 1);
+        std::string count = std::to_string(quantity);
+        std::string str_notes = notes;
+        if(str_notes.size() > 0)
+            csv_label.notes = currentCount + " of " + count + " " + str_notes;
+        else
+            csv_label.notes = currentCount + " of " + count;
         label_list.push_back(csv_label);
     }
 }
