@@ -6,7 +6,7 @@
 #include "HTML.h"
 
 //constants
-constexpr size_t MAXTEXTSIZE = 32;
+constexpr size_t MAXTEXTSIZE = 64;
 constexpr double ALLOWANCE = 0.015625;
 constexpr double RABBET_ALLOWANCE = 0.0625;
 
@@ -82,6 +82,13 @@ struct Shaker_CSV_Label
 	std::string finishedSize;
 	std::string stileLength;
 	std::string railLength;
+	std::string notes;
+};
+
+struct Slab_CSV_Label
+{
+	std::string cabNumber;
+	std::string finishedSize;
 	std::string notes;
 };
 
@@ -565,6 +572,7 @@ public:
 	void Print() const;
 	void AppendTigerStopCuts(std::vector<TigerStopItem>& cutlist) const;
 	void AppendShakerLabel(std::vector<Shaker_CSV_Label>& cutlist) const;
+	void AppendSlabLabel(std::vector<Slab_CSV_Label>& label_list) const;
 	double GetPerimeter() const
 	{
 		return dimensions.finishedWidth * 2.0 + dimensions.finishedHeight * 2;
@@ -649,6 +657,7 @@ public:
 	void WriteHTMLReport(const char* folder) const;
 	void WriteTigerStopCsvs(const std::string& jobname) const;
 	void WriteShakerLabelCsv(const std::string& jobname) const;
+	void WriteSlabLabelCsv(const std::string& jobname) const;
 	void WritePanelCsvs(const std::string& jobname) const;
 	void Print();
 	void OverSize_SanityCheck();

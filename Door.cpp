@@ -260,6 +260,33 @@ void Door::AppendShakerLabel(std::vector<Shaker_CSV_Label>& label_list) const
     }
 }
 
+void Door::AppendSlabLabel(std::vector<Slab_CSV_Label>& label_list) const
+{
+    if (getConstruction() != Construction::Slab)
+        return;
+
+    Slab_CSV_Label csv_label = {};
+    double doorwidth = dimensions.GetOversizedWidth();
+    double doorheight = dimensions.GetOversizedHeight();
+    double railCutLength = dimensions.shakerparts.GetCutLength(Construction::Shaker, ShakerPart::TOP_RAIL, doorwidth, doorheight);
+    double stileCutLength = dimensions.shakerparts.GetCutLength(Construction::Shaker, ShakerPart::LEFT_STILE, doorwidth, doorheight);
+    int denom = 32;
+    csv_label.cabNumber = label;
+    csv_label.finishedSize = getFinishedSizeLabel(denom);
+    csv_label.notes = notes;
+    for (unsigned int i = 0; i < quantity; ++i)
+    {
+        std::string currentCount = std::to_string(i + 1);
+        std::string count = std::to_string(quantity);
+        std::string str_notes = notes;
+        if (str_notes.size() > 0)
+            csv_label.notes = currentCount + " of " + count + " " + str_notes;
+        else
+            csv_label.notes = currentCount + " of " + count;
+        label_list.push_back(csv_label);
+    }
+}
+
 void DoorList::ReadCsvTable(CsvTable doorsTable)
 {
     std::vector<CsvError> errors;
@@ -917,6 +944,31 @@ void DoorList::WriteShakerLabelCsv(const std::string& jobname) const
             << "\"" << label.finishedSize << "\","
             << "\"" << label.railLength << "\","
             << "\"" << label.stileLength << "\","
+            << "\"" << label.notes << "\"\n";
+    }
+}
+
+void DoorList::WriteSlabLabelCsv(const std::string& jobname) const
+{
+    std::vector<Slab_CSV_Label> label_list;
+
+    for (const auto& door : m_doors)
+    {
+        door.AppendSlabLabel(label_list);
+    }
+
+    const std::string filename = "SlabLabelsList.csv";
+    std::ofstream csv_outfile(filename);
+    if (!csv_outfile)
+        return;
+
+    csv_outfile << "Job,ID,Size,Notes\n";
+
+    for (const Slab_CSV_Label& label : label_list)
+    {
+        csv_outfile << "\"" << jobname << "\","
+            << "\"" << label.cabNumber << "\","
+            << "\"" << label.finishedSize << "\","
             << "\"" << label.notes << "\"\n";
     }
 }

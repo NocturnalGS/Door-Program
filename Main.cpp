@@ -26,6 +26,7 @@ int main()
         doorlist.WriteTigerStopCsvs(jobName);
         doorlist.WriteShakerLabelCsv(jobName);
     }
+    doorlist.WriteSlabLabelCsv(jobName);
     doorlist.WritePanelCsvs(jobName);
     //doorlist.Print();
     doorlist.OverSize_SanityCheck();
