@@ -262,14 +262,13 @@ void Door::AppendShakerLabel(std::vector<Shaker_CSV_Label>& label_list) const
 
 void Door::AppendSlabLabel(std::vector<Slab_CSV_Label>& label_list) const
 {
-    if (getConstruction() != Construction::Slab)
+    if (getConstruction() == Construction::Shaker)
         return;
 
     Slab_CSV_Label csv_label = {};
     double doorwidth = dimensions.GetOversizedWidth();
     double doorheight = dimensions.GetOversizedHeight();
-    double railCutLength = dimensions.shakerparts.GetCutLength(Construction::Shaker, ShakerPart::TOP_RAIL, doorwidth, doorheight);
-    double stileCutLength = dimensions.shakerparts.GetCutLength(Construction::Shaker, ShakerPart::LEFT_STILE, doorwidth, doorheight);
+
     int denom = 32;
     csv_label.cabNumber = label;
     csv_label.finishedSize = getFinishedSizeLabel(denom);
