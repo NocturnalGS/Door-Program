@@ -242,6 +242,7 @@ void Door::AppendShakerLabel(std::vector<Shaker_CSV_Label>& label_list) const
     double railCutLength = dimensions.shakerparts.GetCutLength(Construction::Shaker, ShakerPart::TOP_RAIL, doorwidth, doorheight);
     double stileCutLength = dimensions.shakerparts.GetCutLength(Construction::Shaker, ShakerPart::LEFT_STILE, doorwidth, doorheight);
     int denom = 32;
+    csv_label.type = getTypeString();
     csv_label.cabNumber = label;
     csv_label.finishedSize = getFinishedSizeLabel(denom);
     csv_label.railLength = "Rail: " + Fraction::FormatDecimal(railCutLength);
@@ -260,9 +261,40 @@ void Door::AppendShakerLabel(std::vector<Shaker_CSV_Label>& label_list) const
     }
 }
 
+void Door::AppendSmallShakerLabel(std::vector<Shaker_CSV_Label>& label_list) const
+{
+    if (getConstruction() != Construction::SmallShaker)
+        return;
+    if (!hasPanel())
+        return;
+    Shaker_CSV_Label csv_label = {};
+    double doorwidth = dimensions.GetOversizedWidth();
+    double doorheight = dimensions.GetOversizedHeight();
+    double railCutLength = dimensions.shakerparts.GetCutLength(Construction::SmallShaker, ShakerPart::TOP_RAIL, doorwidth, doorheight);
+    double stileCutLength = dimensions.finishedHeight;
+    int denom = 32;
+    csv_label.type = getTypeString();
+    csv_label.cabNumber = label;
+    csv_label.finishedSize = getFinishedSizeLabel(denom);
+    csv_label.railLength = "Rail: " + Fraction::FormatDecimal(railCutLength);
+    csv_label.stileLength = "Stile: " + Fraction::FormatDecimal(stileCutLength);
+    csv_label.notes = notes;
+    for (unsigned int i = 0; i < quantity; ++i)
+    {
+        std::string currentCount = std::to_string(i + 1);
+        std::string count = std::to_string(quantity);
+        std::string str_notes = notes;
+        if (str_notes.size() > 0)
+            csv_label.notes = currentCount + " of " + count + " " + str_notes;
+        else
+            csv_label.notes = currentCount + " of " + count;
+        label_list.push_back(csv_label);
+    }
+}
+
 void Door::AppendSlabLabel(std::vector<Slab_CSV_Label>& label_list) const
 {
-    if (getConstruction() == Construction::Shaker)
+    if (getConstruction() != Construction::Slab)
         return;
 
     Slab_CSV_Label csv_label = {};
@@ -270,6 +302,7 @@ void Door::AppendSlabLabel(std::vector<Slab_CSV_Label>& label_list) const
     double doorheight = dimensions.GetOversizedHeight();
 
     int denom = 32;
+    csv_label.type = getTypeString();
     csv_label.cabNumber = label;
     csv_label.finishedSize = getFinishedSizeLabel(denom);
     csv_label.notes = notes;
@@ -597,7 +630,8 @@ tfoot { display: table-footer-group; }
 		if (door.getConstruction() == Construction::Shaker)
 			style = Html::Svg::DoorStyle::Shaker;
 		if (door.getConstruction() == Construction::SmallShaker)
-			style = Html::Svg::DoorStyle::ShakerMitered;
+			style = Html::Svg::DoorStyle::Shaker;
+            //style = Html::Svg::DoorStyle::ShakerMitered;
         double railadjustment = door.getOversizeHeight() / 2.0;
         double stileadjustment = door.getOversizeWidth() / 2.0;
 
@@ -707,8 +741,9 @@ void DoorList::WritePanelCsvs(const std::string& jobname) const
             buf << door.getPanelName() << ","
                 << door.getPanelLabel() << ","
                 << door.getPanelQuantity() << ","
-                << FormatTrimmed(door.GetPanelWidth()) << ","
-                << FormatTrimmed(door.GetPanelHeight()) << "\n";
+                << FormatTrimmed(door.GetSmallShakerPanelWidth()) << ","
+                << FormatTrimmed(door.GetSmallShakerPanelHeight()) << ","
+                << FormatTrimmed(door.GetPanelRabbetSmallShaker()) << "\n";
         }
     }
     if (containsSlab())
@@ -927,6 +962,7 @@ void DoorList::WriteShakerLabelCsv(const std::string& jobname) const
     for (const auto& door : m_doors)
     {
         door.AppendShakerLabel(label_list);
+        door.AppendSmallShakerLabel(label_list);
     }
 
     const std::string filename = "LabelsList.csv";
@@ -934,11 +970,12 @@ void DoorList::WriteShakerLabelCsv(const std::string& jobname) const
     if (!csv_outfile)
         return;
 
-    csv_outfile << "Job,ID,Size,Rail,Stile,Notes\n";
+    csv_outfile << "Job,Type,ID,Size,Rail,Stile,Notes\n";
 
     for (const Shaker_CSV_Label& label : label_list)
     {
         csv_outfile << "\"" << jobname << "\","
+            << "\"" << label.type << "\","
             << "\"" << label.cabNumber << "\","
             << "\"" << label.finishedSize << "\","
             << "\"" << label.railLength << "\","
@@ -961,11 +998,12 @@ void DoorList::WriteSlabLabelCsv(const std::string& jobname) const
     if (!csv_outfile)
         return;
 
-    csv_outfile << "Job,ID,Size,Notes\n";
+    csv_outfile << "Job,Type,ID,Size,Notes\n";
 
     for (const Slab_CSV_Label& label : label_list)
     {
         csv_outfile << "\"" << jobname << "\","
+            << "\"" << label.type << "\","
             << "\"" << label.cabNumber << "\","
             << "\"" << label.finishedSize << "\","
             << "\"" << label.notes << "\"\n";
@@ -1087,16 +1125,47 @@ void DoorList::OverSize_SanityCheck()
         }
         if (d.getConstruction() == Construction::SmallShaker)
         {
-            if (d.getOversizeWidth() != 0.0)
+            //if (d.getOversizeWidth() != 0.0)
+            //{
+            //    std::cout << "Warning!! " << d.getNameString() << ", (" << d.getFinishedWidthString(denom) << " by " << d.getFinishedHeightString(denom) << ") \n"
+            //        << "Oversize Width: " << d.getOversizeWidth() << " is not 0 for Small Shaker type! \n"
+            //        << std::endl;
+            //}
+            //if (d.getOversizeHeight() != 0.0)
+            //{
+            //    std::cout << "Warning!! " << d.getNameString() << ", (" << d.getFinishedWidthString(denom) << " by " << d.getFinishedHeightString(denom) << ") \n"
+            //        << "Oversize Height: " << d.getOversizeHeight() << " is not 0 for Small Shaker type! \n"
+            //        << std::endl;
+            //}
+            if (d.getOversizeWidth() > 0.0)
             {
                 std::cout << "Warning!! " << d.getNameString() << ", (" << d.getFinishedWidthString(denom) << " by " << d.getFinishedHeightString(denom) << ") \n"
-                    << "Oversize Width: " << d.getOversizeWidth() << " is not 0 for Small Shaker type! \n"
+                    << "Oversize Width: " << d.getOversizeWidth() << " is greater than 0 for Small Shaker type! \n"
                     << std::endl;
             }
-            if (d.getOversizeHeight() != 0.0)
+            if (d.getOversizeHeight() > 0.0)
             {
                 std::cout << "Warning!! " << d.getNameString() << ", (" << d.getFinishedWidthString(denom) << " by " << d.getFinishedHeightString(denom) << ") \n"
-                    << "Oversize Height: " << d.getOversizeHeight() << " is not 0 for Small Shaker type! \n"
+                    << "Oversize Height: " << d.getOversizeHeight() << " is greater than 0 for Small Shaker type! \n"
+                    << std::endl;
+            }
+            if (d.getOversizeWidth() < -0.0625)
+            {
+                std::cout << "Warning!! " << d.getNameString() << ", (" << d.getFinishedWidthString(denom) << " by " << d.getFinishedHeightString(denom) << ") \n"
+                    << "Oversize Width: " << d.getOversizeWidth() << " is less than 0.0625 for Small Shaker type! \n"
+                    << std::endl;
+            }
+            if (d.getOversizeHeight() < -0.0625)
+            {
+                std::cout << "Warning!! " << d.getNameString() << ", (" << d.getFinishedWidthString(denom) << " by " << d.getFinishedHeightString(denom) << ") \n"
+                    << "Oversize Height: " << d.getOversizeHeight() << " is greater than 0.0625 for Small Shaker type! \n"
+                    << std::endl;
+            }
+            if (d.getOversizeWidth() != d.getOversizeHeight())
+            {
+                std::cout << "Warning!! " << d.getNameString() << ", (" << d.getFinishedWidthString(denom) << " by " << d.getFinishedHeightString(denom) << ") \n"
+                    << "Oversize Width and Height do not match for Small Shaker type! \n"
+                    << "Oversize Width: " << d.getOversizeWidth() << " Oversize Height: " << d.getOversizeHeight() << " \n"
                     << std::endl;
             }
         }

@@ -78,6 +78,7 @@ struct TigerStopItem
 
 struct Shaker_CSV_Label
 {
+	std::string type;
 	std::string cabNumber;
 	std::string finishedSize;
 	std::string stileLength;
@@ -87,6 +88,7 @@ struct Shaker_CSV_Label
 
 struct Slab_CSV_Label
 {
+	std::string type;
 	std::string cabNumber;
 	std::string finishedSize;
 	std::string notes;
@@ -173,11 +175,11 @@ struct ShakerParts
 			{
 			case ShakerPart::TOP_RAIL:
 			case ShakerPart::BOTTOM_RAIL:
-				return doorWidth;
+				return doorWidth - GetPartWidth(ShakerPart::LEFT_STILE, construction) - GetPartWidth(ShakerPart::RIGHT_STILE, construction);
 			case ShakerPart::MID_RAIL:
 				if (mid_rail_count == 0)
 					return 0.0;
-				return doorWidth;
+				return doorWidth - GetPartWidth(ShakerPart::LEFT_STILE, construction) - GetPartWidth(ShakerPart::RIGHT_STILE, construction);
 			case ShakerPart::LEFT_STILE:
 			case ShakerPart::RIGHT_STILE:
 				return doorHeight;
@@ -205,8 +207,8 @@ private:
 			double panelWidth = doorWidth - parts.GetPartWidth(ShakerPart::LEFT_STILE, cons) - parts.GetPartWidth(ShakerPart::RIGHT_STILE, cons) - parts.GetPartWidth(ShakerPart::MID_STILE, cons) * parts.mid_stile_count - ALLOWANCE;
 			return (panelWidth / (parts.mid_stile_count + 1));
 		}
-		if (cons == Construction::SmallShaker)
-			return doorWidth - parts.GetPartWidth(ShakerPart::LEFT_STILE, cons) - parts.GetPartWidth(ShakerPart::RIGHT_STILE, cons);
+		//if (cons == Construction::SmallShaker)
+		//	return doorWidth - parts.GetPartWidth(ShakerPart::LEFT_STILE, cons) - parts.GetPartWidth(ShakerPart::RIGHT_STILE, cons);
 		return doorWidth;
 	}
 	double getHeight(Construction cons, ShakerParts parts, double doorHeight) const
@@ -216,8 +218,8 @@ private:
 			double panelHeight = doorHeight - parts.GetPartWidth(ShakerPart::TOP_RAIL, cons) - parts.GetPartWidth(ShakerPart::BOTTOM_RAIL, cons) - parts.GetPartWidth(ShakerPart::MID_RAIL, cons) * parts.mid_rail_count - ALLOWANCE;
 			return panelHeight / (parts.mid_rail_count + 1);
 		}
-		if (cons == Construction::SmallShaker)
-			return doorHeight - parts.GetPartWidth(ShakerPart::TOP_RAIL, cons) - parts.GetPartWidth(ShakerPart::BOTTOM_RAIL, cons);
+		//if (cons == Construction::SmallShaker)
+		//	return doorHeight - parts.GetPartWidth(ShakerPart::TOP_RAIL, cons) - parts.GetPartWidth(ShakerPart::BOTTOM_RAIL, cons);
 		return doorHeight;
 	}
 public:
@@ -298,11 +300,20 @@ public:
 	{ 
 		return dimensions.panel.GetPanelWidth(construction, dimensions.shakerparts, dimensions.GetOversizedWidth(), dimensions.GetOversizedHeight());
 	}
+	double GetSmallShakerPanelWidth() const
+	{
+		return dimensions.panel.GetPanelWidth(construction, dimensions.shakerparts, dimensions.GetOversizedWidth(), dimensions.GetOversizedHeight()) - (dimensions.shakerparts.rabbet * 2);
+	}
 	double GetPanelHeight() const 
 	{ 
 		return dimensions.panel.GetPanelHeight(construction, dimensions.shakerparts, dimensions.GetOversizedWidth(), dimensions.GetOversizedHeight());
 	}
+	double GetSmallShakerPanelHeight() const
+	{
+		return dimensions.panel.GetPanelHeight(construction, dimensions.shakerparts, dimensions.GetOversizedWidth(), dimensions.GetOversizedHeight()) - (dimensions.shakerparts.rabbet * 2);
+	}
 	double GetPanelRabbet() const { return dimensions.shakerparts.rabbet - RABBET_ALLOWANCE; }
+	double GetPanelRabbetSmallShaker() const { return dimensions.shakerparts.rabbet; }
 	bool hasMidRail() const { return dimensions.shakerparts.mid_rail_count > 0; }
 	bool hasMidStile() const { return dimensions.shakerparts.mid_stile_count > 0; }
 	bool hasBoneDetail() const { return dimensions.bonedetail != 0.0; }
@@ -572,6 +583,7 @@ public:
 	void Print() const;
 	void AppendTigerStopCuts(std::vector<TigerStopItem>& cutlist) const;
 	void AppendShakerLabel(std::vector<Shaker_CSV_Label>& cutlist) const;
+	void AppendSmallShakerLabel(std::vector<Shaker_CSV_Label>& label_list) const;
 	void AppendSlabLabel(std::vector<Slab_CSV_Label>& label_list) const;
 	double GetPerimeter() const
 	{
