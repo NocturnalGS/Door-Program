@@ -736,7 +736,7 @@ void DoorList::WritePanelCsvs(const std::string& jobname) const
             std::ostringstream& buf = buffers[filePath];
             if (buf.tellp() == 0)
             {
-                buf << "Name,Label,Qty,Width,Height\n";
+                buf << "Name,Label,Qty,Width,Height,Rabbet\n";
             }
             buf << door.getPanelName() << ","
                 << door.getPanelLabel() << ","
