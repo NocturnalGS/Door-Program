@@ -243,13 +243,26 @@ void Door::AppendShakerLabel(std::vector<Shaker_CSV_Label>& label_list) const
     double stileCutLength = dimensions.shakerparts.GetCutLength(Construction::Shaker, ShakerPart::LEFT_STILE, doorwidth, doorheight);
     int denom = 32;
     csv_label.type = getTypeString();
-    csv_label.cabNumber = label;
     csv_label.finishedSize = getFinishedSizeLabel(denom);
     csv_label.railLength = "Rail: " + Fraction::FormatDecimal(railCutLength);
     csv_label.stileLength = "Stile: " + Fraction::FormatDecimal(stileCutLength);
     csv_label.notes = notes;
     for (unsigned int i = 0; i < quantity; ++i)
     {
+        if (type == FaceType::Door && quantity % 2 == 0)
+        {
+            std::string postfix = "L";
+            if (i % 2 == 1)
+            {
+                postfix = "R";
+            }
+            csv_label.cabNumber = label + postfix;
+        }
+        else
+        {
+            csv_label.cabNumber = label;
+        }
+
         std::string currentCount = std::to_string(i + 1);
         std::string count = std::to_string(quantity);
         std::string str_notes = notes;
@@ -274,13 +287,25 @@ void Door::AppendSmallShakerLabel(std::vector<Shaker_CSV_Label>& label_list) con
     double stileCutLength = dimensions.finishedHeight;
     int denom = 32;
     csv_label.type = getTypeString();
-    csv_label.cabNumber = label;
     csv_label.finishedSize = getFinishedSizeLabel(denom);
     csv_label.railLength = "Rail: " + Fraction::FormatDecimal(railCutLength);
     csv_label.stileLength = "Stile: " + Fraction::FormatDecimal(stileCutLength);
     csv_label.notes = notes;
     for (unsigned int i = 0; i < quantity; ++i)
     {
+        if (type == FaceType::Door && quantity % 2 == 0)
+        {
+            std::string postfix = "L";
+            if (i % 2 == 1)
+            {
+                postfix = "R";
+            }
+            csv_label.cabNumber = label + postfix;
+        }
+        else
+        {
+            csv_label.cabNumber = label;
+        }
         std::string currentCount = std::to_string(i + 1);
         std::string count = std::to_string(quantity);
         std::string str_notes = notes;
@@ -303,11 +328,23 @@ void Door::AppendSlabLabel(std::vector<Slab_CSV_Label>& label_list) const
 
     int denom = 32;
     csv_label.type = getTypeString();
-    csv_label.cabNumber = label;
     csv_label.finishedSize = getFinishedSizeLabel(denom);
     csv_label.notes = notes;
     for (unsigned int i = 0; i < quantity; ++i)
     {
+        if (type == FaceType::Door && quantity % 2 == 0)
+        {
+            std::string postfix = "L";
+            if (i % 2 == 1)
+            {
+                postfix = "R";
+            }
+            csv_label.cabNumber = label + postfix;
+        }
+        else
+        {
+            csv_label.cabNumber = label;
+        }
         std::string currentCount = std::to_string(i + 1);
         std::string count = std::to_string(quantity);
         std::string str_notes = notes;
