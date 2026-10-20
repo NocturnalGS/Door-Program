@@ -78,6 +78,7 @@ struct TigerStopItem
 
 struct Shaker_CSV_Label
 {
+	std::string roomname;
 	std::string type;
 	std::string cabNumber;
 	std::string finishedSize;
@@ -88,6 +89,7 @@ struct Shaker_CSV_Label
 
 struct Slab_CSV_Label
 {
+	std::string roomname;
 	std::string type;
 	std::string cabNumber;
 	std::string finishedSize;
@@ -271,6 +273,7 @@ struct Dimensions
 
 class Door
 {
+	char roomname[MAXTEXTSIZE] = {};
 	char name[MAXTEXTSIZE] = {};
 	char label[MAXTEXTSIZE] = {};
 	char material[MAXTEXTSIZE] = {};
@@ -292,6 +295,12 @@ public:
 	double GetBoneDetail() const { return dimensions.bonedetail; }
 	double GetRail_Stile_Total_Length() const;
 	double GetBoneDetail_Total_Length() const;
+	int GetPanelCount() const
+	{
+		int stiles = dimensions.shakerparts.mid_stile_count + 1;
+		int rails = dimensions.shakerparts.mid_rail_count + 1;
+		return stiles * rails;
+	}
 	std::string GetPanelMaterial() const 	
 	{
 		return std::string(material);

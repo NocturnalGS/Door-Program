@@ -26,6 +26,7 @@ bool Door::Create(const CsvRow& row, size_t row_index, std::vector<CsvError>& er
         };
 
     CopyCsvText(row, "Name", name, MAXTEXTSIZE);
+    CopyCsvText(row, "Room Name", roomname, MAXTEXTSIZE);
     CopyCsvText(row, "Cab#", label, MAXTEXTSIZE);
     CopyCsvText(row, "Notes", notes, MAXTEXTSIZE);
     CopyCsvText(row, "Material", material, MAXTEXTSIZE);
@@ -242,6 +243,7 @@ void Door::AppendShakerLabel(std::vector<Shaker_CSV_Label>& label_list) const
     double railCutLength = dimensions.shakerparts.GetCutLength(Construction::Shaker, ShakerPart::TOP_RAIL, doorwidth, doorheight);
     double stileCutLength = dimensions.shakerparts.GetCutLength(Construction::Shaker, ShakerPart::LEFT_STILE, doorwidth, doorheight);
     int denom = 32;
+    csv_label.roomname = roomname;
     csv_label.type = getTypeString();
     csv_label.finishedSize = getFinishedSizeLabel(denom);
     csv_label.railLength = "Rail: " + Fraction::FormatDecimal(railCutLength);
@@ -270,7 +272,11 @@ void Door::AppendShakerLabel(std::vector<Shaker_CSV_Label>& label_list) const
             csv_label.notes = currentCount + " of " + count + " " + str_notes;
         else
             csv_label.notes = currentCount + " of " + count;
-        label_list.push_back(csv_label);
+        int panelcount = GetPanelCount();
+        for (int p = 0; p < panelcount; ++p)
+        {
+            label_list.push_back(csv_label);
+        }
     }
 }
 
@@ -286,6 +292,7 @@ void Door::AppendSmallShakerLabel(std::vector<Shaker_CSV_Label>& label_list) con
     double railCutLength = dimensions.shakerparts.GetCutLength(Construction::SmallShaker, ShakerPart::TOP_RAIL, doorwidth, doorheight);
     double stileCutLength = dimensions.finishedHeight;
     int denom = 32;
+    csv_label.roomname = roomname;
     csv_label.type = getTypeString();
     csv_label.finishedSize = getFinishedSizeLabel(denom);
     csv_label.railLength = "Rail: " + Fraction::FormatDecimal(railCutLength);
@@ -327,6 +334,7 @@ void Door::AppendSlabLabel(std::vector<Slab_CSV_Label>& label_list) const
     double doorheight = dimensions.GetOversizedHeight();
 
     int denom = 32;
+    csv_label.roomname = roomname;
     csv_label.type = getTypeString();
     csv_label.finishedSize = getFinishedSizeLabel(denom);
     csv_label.notes = notes;
@@ -1007,11 +1015,12 @@ void DoorList::WriteShakerLabelCsv(const std::string& jobname) const
     if (!csv_outfile)
         return;
 
-    csv_outfile << "Job,Type,ID,Size,Rail,Stile,Notes\n";
+    csv_outfile << "Job,RoomName,Type,ID,Size,Rail,Stile,Notes\n";
 
     for (const Shaker_CSV_Label& label : label_list)
     {
         csv_outfile << "\"" << jobname << "\","
+            << "\"" << label.roomname << "\","
             << "\"" << label.type << "\","
             << "\"" << label.cabNumber << "\","
             << "\"" << label.finishedSize << "\","
@@ -1035,11 +1044,12 @@ void DoorList::WriteSlabLabelCsv(const std::string& jobname) const
     if (!csv_outfile)
         return;
 
-    csv_outfile << "Job,Type,ID,Size,Notes\n";
+    csv_outfile << "Job,RoomName,Type,ID,Size,Notes\n";
 
     for (const Slab_CSV_Label& label : label_list)
     {
         csv_outfile << "\"" << jobname << "\","
+            << "\"" << label.roomname << "\","
             << "\"" << label.type << "\","
             << "\"" << label.cabNumber << "\","
             << "\"" << label.finishedSize << "\","
