@@ -108,7 +108,7 @@ struct ShakerParts
 	double GetPartWidth(ShakerPart part, Construction con) const
 	{ 
 		double adjustment = 0.0;
-		if (con == Construction::Shaker)
+		if (con == Construction::Shaker || con == Construction::ShakerMitered)
 		{
 			adjustment = stick_tolerance;
 		}
@@ -272,7 +272,7 @@ public:
 	}
 	unsigned int GetPanelCount(Construction cons, ShakerParts parts) const
 	{
-		if (hasPanel && (cons == Construction::Shaker || cons == Construction::SmallShaker))
+		if (hasPanel && (cons == Construction::Shaker || cons == Construction::ShakerMitered || cons == Construction::SmallShaker))
 			return (parts.mid_rail_count + 1) * (parts.mid_stile_count + 1);
 		else
 			return 1;

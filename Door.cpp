@@ -209,7 +209,7 @@ void Door::AppendTigerStopCuts(std::vector<TigerStopItem>& cutlist) const
                 return;
 
             TigerStopItem c{};
-            if (getConstruction() == Construction::Shaker)
+            if (getConstruction() == Construction::Shaker || getConstruction() == Construction::ShakerMitered)
 			    c.group = GetStockGroup(part);
             if (getConstruction() == Construction::SmallShaker)
                 c.group = StockGroup::Small_Shaker_Rail;
@@ -220,7 +220,7 @@ void Door::AppendTigerStopCuts(std::vector<TigerStopItem>& cutlist) const
             cutlist.push_back(c);
         };
 
-    if (getConstruction() == Construction::Shaker || getConstruction() == Construction::SmallShaker)
+    if (getConstruction() == Construction::Shaker || getConstruction() == Construction::ShakerMitered || getConstruction() == Construction::SmallShaker)
     {
         add(ShakerPart::TOP_RAIL, quantity);
         add(ShakerPart::BOTTOM_RAIL, quantity);
@@ -233,15 +233,15 @@ void Door::AppendTigerStopCuts(std::vector<TigerStopItem>& cutlist) const
 
 void Door::AppendShakerLabel(std::vector<Shaker_CSV_Label>& label_list) const
 {
-    if (getConstruction() != Construction::Shaker)
+    if (getConstruction() != Construction::Shaker && getConstruction() != Construction::ShakerMitered)
         return;
     if (!hasPanel())
         return;
     Shaker_CSV_Label csv_label = {};
     double doorwidth = dimensions.GetOversizedWidth();
     double doorheight = dimensions.GetOversizedHeight();
-    double railCutLength = dimensions.shakerparts.GetCutLength(Construction::Shaker, ShakerPart::TOP_RAIL, doorwidth, doorheight);
-    double stileCutLength = dimensions.shakerparts.GetCutLength(Construction::Shaker, ShakerPart::LEFT_STILE, doorwidth, doorheight);
+    double railCutLength = dimensions.shakerparts.GetCutLength(construction, ShakerPart::TOP_RAIL, doorwidth, doorheight);
+    double stileCutLength = dimensions.shakerparts.GetCutLength(construction, ShakerPart::LEFT_STILE, doorwidth, doorheight);
     int denom = 32;
     csv_label.roomname = roomname;
     csv_label.type = getTypeString();
@@ -740,7 +740,7 @@ void DoorList::WritePanelCsvs(const std::string& jobname) const
     {
         for (const auto& door : m_doors)
         {
-            if (door.getConstruction() != Construction::Shaker)
+            if (door.getConstruction() != Construction::Shaker && door.getConstruction() != Construction::ShakerMitered)
                 continue;
             if (!door.hasPanel())
                 continue;
@@ -996,7 +996,7 @@ void DoorList::WriteTigerStopCsvs(const std::string& jobname) const
 
     for (const auto& door : m_doors)
     {
-        if (door.getConstruction() == Construction::Shaker || door.getConstruction() == Construction::SmallShaker)
+        if (door.getConstruction() == Construction::Shaker || door.getConstruction() == Construction::ShakerMitered || door.getConstruction() == Construction::SmallShaker)
             door.AppendTigerStopCuts(cutlist);
     }
     WriteGroupedCSVs(cutlist, jobname);
@@ -1169,6 +1169,21 @@ void DoorList::OverSize_SanityCheck()
             {
                 std::cout << "Warning!! " << d.getNameString() << ", (" << d.getFinishedWidthString(denom) << " by " << d.getFinishedHeightString(denom) << ") \n"
                     << "Oversize Height: " << d.getOversizeHeight() << " is negative on Shaker type! \n"
+                    << std::endl;
+            }
+        }
+        if (d.getConstruction() == Construction::ShakerMitered)
+        {
+            if (d.getOversizeWidth() != 0.0)
+            {
+                std::cout << "Warning!! " << d.getNameString() << ", (" << d.getFinishedWidthString(denom) << " by " << d.getFinishedHeightString(denom) << ") \n"
+                    << "Oversize Width: " << d.getOversizeWidth() << " is not zero for Mitered Shaker type! \n"
+                    << std::endl;
+            }
+            if (d.getOversizeHeight() != 0.0)
+            {
+                std::cout << "Warning!! " << d.getNameString() << ", (" << d.getFinishedWidthString(denom) << " by " << d.getFinishedHeightString(denom) << ") \n"
+                    << "Oversize Height: " << d.getOversizeHeight() << " is not zero for Mitered Shaker type! \n"
                     << std::endl;
             }
         }
