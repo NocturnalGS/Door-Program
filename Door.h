@@ -227,7 +227,7 @@ struct Panel
 private:
 	double getWidth(Construction cons, ShakerParts parts, double doorWidth) const
 	{
-		if (cons == Construction::Shaker)
+		if (cons == Construction::Shaker || cons == Construction::ShakerMitered)
 		{
 			double panelWidth = doorWidth - parts.GetPartWidth(ShakerPart::LEFT_STILE, cons) - parts.GetPartWidth(ShakerPart::RIGHT_STILE, cons) - parts.GetPartWidth(ShakerPart::MID_STILE, cons) * parts.mid_stile_count - ALLOWANCE;
 			return (panelWidth / (parts.mid_stile_count + 1));
@@ -238,7 +238,7 @@ private:
 	}
 	double getHeight(Construction cons, ShakerParts parts, double doorHeight) const
 	{
-		if (cons == Construction::Shaker)
+		if (cons == Construction::Shaker || cons == Construction::ShakerMitered)
 		{
 			double panelHeight = doorHeight - parts.GetPartWidth(ShakerPart::TOP_RAIL, cons) - parts.GetPartWidth(ShakerPart::BOTTOM_RAIL, cons) - parts.GetPartWidth(ShakerPart::MID_RAIL, cons) * parts.mid_rail_count - ALLOWANCE;
 			return panelHeight / (parts.mid_rail_count + 1);
