@@ -676,6 +676,8 @@ tfoot { display: table-footer-group; }
 			style = Html::Svg::DoorStyle::Shaker;
 		if (door.getConstruction() == Construction::SmallShaker)
 			style = Html::Svg::DoorStyle::Shaker;
+        if (door.getConstruction() == Construction::ShakerMitered)
+            style = Html::Svg::DoorStyle::ShakerMitered;
             //style = Html::Svg::DoorStyle::ShakerMitered;
         double railadjustment = door.getOversizeHeight() / 2.0;
         double stileadjustment = door.getOversizeWidth() / 2.0;

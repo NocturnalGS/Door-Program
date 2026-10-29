@@ -47,6 +47,7 @@ enum class Construction
 {
 	Slab,
 	Shaker,
+	ShakerMitered,
 	SmallShaker
 };
 
@@ -156,6 +157,28 @@ struct ShakerParts
 			case ShakerPart::TOP_RAIL:
 			case ShakerPart::BOTTOM_RAIL:
 				return doorWidth - GetPartWidth(ShakerPart::LEFT_STILE, construction) - GetPartWidth(ShakerPart::RIGHT_STILE, construction) + (rabbet * 2) + cope_tolerance * 2;
+			case ShakerPart::MID_RAIL:
+				if (mid_rail_count == 0)
+					return 0.0;
+				return doorWidth - GetPartWidth(ShakerPart::LEFT_STILE, construction) - GetPartWidth(ShakerPart::RIGHT_STILE, construction) + (rabbet * 2) + cope_tolerance * 2;
+			case ShakerPart::LEFT_STILE:
+			case ShakerPart::RIGHT_STILE:
+				return doorHeight;
+			case ShakerPart::MID_STILE:
+				if (mid_stile_count == 0)
+					return 0.0;
+				return doorHeight - GetPartWidth(ShakerPart::TOP_RAIL, construction) - GetPartWidth(ShakerPart::BOTTOM_RAIL, construction) - (GetPartWidth(ShakerPart::MID_RAIL, construction) * mid_rail_count) + (rabbet * 2) + cope_tolerance * 2;
+			default:
+				return 0.0;
+			}
+		}
+		else if (construction == Construction::ShakerMitered)
+		{
+			switch (part)
+			{
+			case ShakerPart::TOP_RAIL:
+			case ShakerPart::BOTTOM_RAIL:
+				return doorWidth;// -GetPartWidth(ShakerPart::LEFT_STILE, construction) - GetPartWidth(ShakerPart::RIGHT_STILE, construction) + (rabbet * 2) + cope_tolerance * 2;
 			case ShakerPart::MID_RAIL:
 				if (mid_rail_count == 0)
 					return 0.0;
@@ -328,7 +351,7 @@ public:
 	bool hasBoneDetail() const { return dimensions.bonedetail != 0.0; }
 	bool hasPanel() const 
 	{
-		if (construction != Construction::Shaker && construction != Construction::SmallShaker)
+		if (construction != Construction::Shaker && construction != Construction::SmallShaker && construction != Construction::ShakerMitered)
 			return false;
 		return dimensions.panel.hasPanel;
 	}
@@ -386,6 +409,8 @@ public:
 			return "Slab";
 		case Construction::Shaker:
 			return "Shaker";
+		case Construction::ShakerMitered:
+			return "Shaker Mitered";
 		case Construction::SmallShaker:
 			return "Small Shaker";
 		default:
@@ -617,6 +642,7 @@ private:
 		if (s == "SLAB") { out = Construction::Slab; return true; }
 		if (s == "SHAKER") { out = Construction::Shaker;   return true; }
 		if (s == "SMALL_SHAKER") { out = Construction::SmallShaker; return true; }
+		if (s == "SHAKER_MITERED") { out = Construction::ShakerMitered; return true; }
 
 		return false;
 	}
@@ -650,7 +676,7 @@ class DoorList
 	bool containsShaker() const {
 		for (const auto& door : m_doors)
 		{
-			if (door.getConstruction() == Construction::Shaker)
+			if (door.getConstruction() == Construction::Shaker || door.getConstruction() == Construction::ShakerMitered)
 				return true;
 		}
 		return false;
