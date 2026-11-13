@@ -8,7 +8,7 @@
 //constants
 constexpr size_t MAXTEXTSIZE = 64;
 constexpr double ALLOWANCE = 0.015625;
-constexpr double RABBET_ALLOWANCE = 0.0625;
+//constexpr double RABBET_ALLOWANCE = 0.0625;
 
 //struct forward declarations
 struct CsvRow;
@@ -103,6 +103,7 @@ struct ShakerParts
 	double rabbet = 0.0;
 	double stick_tolerance = 0.0;
 	double cope_tolerance = 0.0;
+	double rabbet_allowance = 0.0625;
 	unsigned int mid_rail_count = 0;
 	unsigned int mid_stile_count = 0;
 	double GetPartWidth(ShakerPart part, Construction con) const
@@ -344,7 +345,7 @@ public:
 	{
 		return dimensions.panel.GetPanelHeight(construction, dimensions.shakerparts, dimensions.GetOversizedWidth(), dimensions.GetOversizedHeight()) - (dimensions.shakerparts.rabbet * 2);
 	}
-	double GetPanelRabbet() const { return dimensions.shakerparts.rabbet - RABBET_ALLOWANCE; }
+	double GetPanelRabbet() const { return dimensions.shakerparts.rabbet - dimensions.shakerparts.rabbet_allowance; }
 	double GetPanelRabbetSmallShaker() const { return dimensions.shakerparts.rabbet; }
 	bool hasMidRail() const { return dimensions.shakerparts.mid_rail_count > 0; }
 	bool hasMidStile() const { return dimensions.shakerparts.mid_stile_count > 0; }

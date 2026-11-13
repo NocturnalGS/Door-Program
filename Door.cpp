@@ -50,6 +50,7 @@ bool Door::Create(const CsvRow& row, size_t row_index, std::vector<CsvError>& er
     ReadDouble(row, "WidthOversize", dimensions.oversizeWidth);
     ReadDouble(row, "HeightOversize", dimensions.oversizeHeight);
     ReadDouble(row, "Rabbet", dimensions.shakerparts.rabbet);
+    ReadDouble(row, "Rabbet Allowance", dimensions.shakerparts.rabbet_allowance);
     ReadDouble(row, "Bone Detail", dimensions.bonedetail);
 
     ReadDouble(row, "Bottom Rail", dimensions.shakerparts.width[static_cast<int>(ShakerPart::BOTTOM_RAIL)]);
