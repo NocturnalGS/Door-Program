@@ -7,8 +7,8 @@
 
 //constants
 constexpr size_t MAXTEXTSIZE = 64;
-constexpr double ALLOWANCE = 0.015625;
-//constexpr double RABBET_ALLOWANCE = 0.0625;
+constexpr double SHAKER_PANEL_ALLOWANCE = 0.015625; // reduce panel size for rails and stiles can clamp together
+constexpr double RAISED_PANEL_TOLERANCE = 0.03; // How much the door machine takes off of the panel, This needs to be added back to the blank size
 
 //struct forward declarations
 struct CsvRow;
@@ -68,6 +68,13 @@ enum class ShakerPart
 	SHAKERPARTCOUNT
 };
 
+enum class PanelType
+{
+	PANEL,
+	RAISED_PANEL,
+	NONE
+};
+
 struct TigerStopItem
 {
 	StockGroup group;
@@ -103,7 +110,7 @@ struct ShakerParts
 	double rabbet = 0.0;
 	double stick_tolerance = 0.0;
 	double cope_tolerance = 0.0;
-	double rabbet_allowance = 0.0625;
+	double panel_allowance = 0.0625;
 	unsigned int mid_rail_count = 0;
 	unsigned int mid_stile_count = 0;
 	double GetPartWidth(ShakerPart part, Construction con) const
@@ -224,28 +231,30 @@ struct ShakerParts
 struct Panel
 {
 	Orientation orientation = Orientation::VERTICAL;
-	bool hasPanel = false;
+	PanelType panelType = PanelType::NONE;
 private:
 	double getWidth(Construction cons, ShakerParts parts, double doorWidth) const
 	{
 		if (cons == Construction::Shaker || cons == Construction::ShakerMitered)
 		{
-			double panelWidth = doorWidth - parts.GetPartWidth(ShakerPart::LEFT_STILE, cons) - parts.GetPartWidth(ShakerPart::RIGHT_STILE, cons) - parts.GetPartWidth(ShakerPart::MID_STILE, cons) * parts.mid_stile_count - ALLOWANCE;
+			const double leftStileWidth = parts.GetPartWidth(ShakerPart::LEFT_STILE, cons);
+			const double rightStileWidth = parts.GetPartWidth(ShakerPart::RIGHT_STILE, cons);
+			const double midStileWidth = parts.GetPartWidth(ShakerPart::MID_STILE, cons) * parts.mid_stile_count;
+			double panelWidth = doorWidth - leftStileWidth - rightStileWidth - midStileWidth - SHAKER_PANEL_ALLOWANCE;
 			return (panelWidth / (parts.mid_stile_count + 1));
 		}
-		//if (cons == Construction::SmallShaker)
-		//	return doorWidth - parts.GetPartWidth(ShakerPart::LEFT_STILE, cons) - parts.GetPartWidth(ShakerPart::RIGHT_STILE, cons);
 		return doorWidth;
 	}
 	double getHeight(Construction cons, ShakerParts parts, double doorHeight) const
 	{
 		if (cons == Construction::Shaker || cons == Construction::ShakerMitered)
 		{
-			double panelHeight = doorHeight - parts.GetPartWidth(ShakerPart::TOP_RAIL, cons) - parts.GetPartWidth(ShakerPart::BOTTOM_RAIL, cons) - parts.GetPartWidth(ShakerPart::MID_RAIL, cons) * parts.mid_rail_count - ALLOWANCE;
+			const double topRailWidth = parts.GetPartWidth(ShakerPart::TOP_RAIL, cons);
+			const double bottomRailWidth = parts.GetPartWidth(ShakerPart::BOTTOM_RAIL, cons);
+			const double midRailWidth = parts.GetPartWidth(ShakerPart::MID_RAIL, cons) * parts.mid_rail_count;
+			double panelHeight = doorHeight - topRailWidth - bottomRailWidth - midRailWidth - SHAKER_PANEL_ALLOWANCE;
 			return panelHeight / (parts.mid_rail_count + 1);
 		}
-		//if (cons == Construction::SmallShaker)
-		//	return doorHeight - parts.GetPartWidth(ShakerPart::TOP_RAIL, cons) - parts.GetPartWidth(ShakerPart::BOTTOM_RAIL, cons);
 		return doorHeight;
 	}
 public:
@@ -273,10 +282,13 @@ public:
 	}
 	unsigned int GetPanelCount(Construction cons, ShakerParts parts) const
 	{
+		bool hasPanel = (panelType != PanelType::NONE);
 		if (hasPanel && (cons == Construction::Shaker || cons == Construction::ShakerMitered || cons == Construction::SmallShaker))
 			return (parts.mid_rail_count + 1) * (parts.mid_stile_count + 1);
-		else
+
+		if (hasPanel)
 			return 1;
+		return 0;
 	}
 };
 
@@ -345,7 +357,13 @@ public:
 	{
 		return dimensions.panel.GetPanelHeight(construction, dimensions.shakerparts, dimensions.GetOversizedWidth(), dimensions.GetOversizedHeight()) - (dimensions.shakerparts.rabbet * 2);
 	}
-	double GetPanelRabbet() const { return dimensions.shakerparts.rabbet - dimensions.shakerparts.rabbet_allowance; }
+	double GetPanelRabbet() const 
+	{ 
+		double rabbet = dimensions.shakerparts.rabbet - dimensions.shakerparts.panel_allowance;
+		if (dimensions.panel.panelType == PanelType::RAISED_PANEL)
+			rabbet -= RAISED_PANEL_TOLERANCE;
+		return rabbet;
+	}
 	double GetPanelRabbetSmallShaker() const { return dimensions.shakerparts.rabbet; }
 	bool hasMidRail() const { return dimensions.shakerparts.mid_rail_count > 0; }
 	bool hasMidStile() const { return dimensions.shakerparts.mid_stile_count > 0; }
@@ -354,7 +372,11 @@ public:
 	{
 		if (construction != Construction::Shaker && construction != Construction::SmallShaker && construction != Construction::ShakerMitered)
 			return false;
-		return dimensions.panel.hasPanel;
+		return (dimensions.panel.panelType != PanelType::NONE);
+	}
+	PanelType getPanelType() const
+	{
+		return dimensions.panel.panelType;
 	}
 	std::string getMaterialString() const
 	{
@@ -408,7 +430,9 @@ public:
 		{
 		case Construction::Slab:
 			return "Slab";
-		case Construction::Shaker:
+		case Construction::Shaker: 
+			if(dimensions.panel.panelType == PanelType::RAISED_PANEL)
+				return "Raised Panel";
 			return "Shaker";
 		case Construction::ShakerMitered:
 			return "Shaker Mitered";
@@ -658,12 +682,22 @@ private:
 		return false;
 	}
 
-	inline bool ReadPanel(const CsvRow& row, bool& out)
+	inline bool ReadPanel(const CsvRow& row, PanelType& out)
 	{
 		const std::string& s = ToUpper(row["Panel"]);
 
-		if (s == "YES") { out = true; return true; }
-		else out = false;
+		if (s == "YES") 
+		{ 
+			out = PanelType::PANEL; 
+			return true;
+		}
+		else if (s == "RAISED")
+		{
+			out = PanelType::RAISED_PANEL;
+			return true;
+		}
+		else 
+			out = PanelType::NONE;
 
 		return false;
 	}

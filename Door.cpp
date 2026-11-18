@@ -50,7 +50,7 @@ bool Door::Create(const CsvRow& row, size_t row_index, std::vector<CsvError>& er
     ReadDouble(row, "WidthOversize", dimensions.oversizeWidth);
     ReadDouble(row, "HeightOversize", dimensions.oversizeHeight);
     ReadDouble(row, "Rabbet", dimensions.shakerparts.rabbet);
-    ReadDouble(row, "Rabbet Allowance", dimensions.shakerparts.rabbet_allowance);
+    ReadDouble(row, "Rabbet Allowance", dimensions.shakerparts.panel_allowance);
     ReadDouble(row, "Bone Detail", dimensions.bonedetail);
 
     ReadDouble(row, "Bottom Rail", dimensions.shakerparts.width[static_cast<int>(ShakerPart::BOTTOM_RAIL)]);
@@ -67,7 +67,7 @@ bool Door::Create(const CsvRow& row, size_t row_index, std::vector<CsvError>& er
     ReadUInt(row, "Mid Stile Count", dimensions.shakerparts.mid_stile_count);
 
     ReadOrientation(row, dimensions.panel.orientation);
-    ReadPanel(row, dimensions.panel.hasPanel);
+    ReadPanel(row, dimensions.panel.panelType);
 
     return true;
 }
@@ -745,12 +745,42 @@ void DoorList::WritePanelCsvs(const std::string& jobname) const
                 continue;
             if (!door.hasPanel())
                 continue;
+            if (door.getPanelType() != PanelType::PANEL)
+                continue;
             const std::string material = door.GetPanelMaterial();
             std::filesystem::path dir(material);
             std::filesystem::create_directories(dir);
 
             std::ostringstream filename;
             filename << jobname << " " << material << " Shaker Panels.csv";
+
+            std::filesystem::path filePath = dir / filename.str();
+            std::ostringstream& buf = buffers[filePath];
+            if (buf.tellp() == 0)
+            {
+                buf << "Name,Label,Qty,Width,Height,Rabbet\n";
+            }
+            buf << door.getPanelName() << ","
+                << door.getPanelLabel() << ","
+                << door.getPanelQuantity() << ","
+                << FormatTrimmed(door.GetPanelWidth()) << ","
+                << FormatTrimmed(door.GetPanelHeight()) << ","
+                << FormatTrimmed(door.GetPanelRabbet()) << "\n";
+        }
+        for (const auto& door : m_doors)
+        {
+            if (door.getConstruction() != Construction::Shaker && door.getConstruction() != Construction::ShakerMitered)
+                continue;
+            if (!door.hasPanel())
+                continue;
+            if (door.getPanelType() != PanelType::RAISED_PANEL)
+                continue;
+            const std::string material = door.GetPanelMaterial();
+            std::filesystem::path dir(material);
+            std::filesystem::create_directories(dir);
+
+            std::ostringstream filename;
+            filename << jobname << " " << material << " Raised Panels.csv";
 
             std::filesystem::path filePath = dir / filename.str();
             std::ostringstream& buf = buffers[filePath];
